@@ -1,4 +1,4 @@
-FROM pm-v4-base:latest
+FROM pm-v4-base:latest AS app-env
 
 #
 # build args
@@ -8,35 +8,39 @@ ARG PM_VERSION
 #
 # pull repo, unzip, copy to working dir
 #
-WORKDIR /tmp
-RUN wget https://github.com/ProcessMaker/processmaker/archive/refs/tags/v${PM_VERSION}.zip
-RUN unzip v${PM_VERSION}.zip
-RUN if [ -d /code ]; then rm -rf /code; fi
-RUN mkdir -p /code
-RUN mv processmaker-${PM_VERSION} pm-v4 && mv pm-v4 /code
-WORKDIR /code/pm-v4
+RUN rm -rf /home/pm-v4 && mkdir -p /home/pm-v4
+WORKDIR /home
+RUN git clone https://github.com/ProcessMaker/processmaker.git pm-v4
+WORKDIR /home/pm-v4
+RUN git checkout v${PM_VERSION}
+COPY .env .env.example
 
 #
 # composer install
 #
-RUN COMPOSER_ALLOW_SUPERUSER=1 composer install
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader
 
 #
 # laravel echo server
 #
-COPY build-files/laravel-echo-server.json .
+COPY stubs/laravel-echo-server.json .
 
 #
 # npm install/build
 #
-RUN npm install --unsafe-perm=true && npm run dev
+RUN npm clean-install --no-audit --unsafe-perm=true && \
+    npm run dev
 
 #
 # container entrypoint
 #
-COPY build-files/init.sh .
+RUN mkdir -p /home/pm-v4-docker
+WORKDIR /home/pm-v4-docker
+COPY ./init.sh entrypoint
+RUN chmod 0755 entrypoint && ln -s /home/pm-v4-docker/entrypoint /usr/local/bin/entrypoint
 
 #
 # entrypoint
 #
-CMD /bin/bash init && supervisord --nodaemon --loglevel=debug
+WORKDIR /home/pm-v4
+CMD ["/usr/local/bin/entrypoint"]
