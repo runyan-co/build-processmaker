@@ -1,12 +1,13 @@
-version: "4.1.1"
+version: "3.0.0"
 services:
   web:
     image: pm-v4:latest
+    env_file:
+      - .env
     ports:
       - ${PM_APP_PORT}:80
       - ${PM_BROADCASTER_PORT}:6001
     environment:
-      - PM_APP_URL
       - PM_APP_PORT
       - PM_BROADCASTER_PORT
     volumes:
@@ -20,16 +21,17 @@ services:
       - redis
   redis:
     image: redis:7
+    volumes:
+      - redis:/data
   mysql:
     image: mysql:8
     restart: always
     environment:
       MYSQL_DATABASE: processmaker
-      MYSQL_USER: processmaker
-      MYSQL_PASSWORD: password
       MYSQL_ROOT_PASSWORD: password
     volumes:
       - database:/var/lib/mysql
 volumes:
-  database:
-  storage:
+  database: {}
+  redis: {}
+  storage: {}
