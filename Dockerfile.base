@@ -3,20 +3,18 @@ FROM ubuntu:22.04 AS base-env
 #
 # Build arguments
 #
-ARG PM_VERSION
 ARG PHP_VERSION
 ARG NODE_VERSION
 
 #
 # environment vars
 #
-ENV DEBIAN_FRONTEND="noninteractive"
-ENV DOCKERVERSION="20.10.5"
-ENV PM_APP_PORT="8080"
-ENV PM_BROADCASTER_PORT="6004"
-ENV PHP_VERSION=${PHP_VERSION}
-ENV PM_VERSION=${PM_VERSION}
-ENV PM_DOCKER_SOCK="/var/run/docker.sock"
+ENV DEBIAN_FRONTEND     "noninteractive"
+ENV DOCKERVERSION       "20.10.5"
+ENV PM_APP_PORT         8080
+ENV PM_BROADCASTER_PORT 6004
+ENV PHP_VERSION         ${PHP_VERSION}
+ENV PM_DOCKER_SOCK      "/var/run/docker.sock"
 
 #
 # debian package updates
@@ -46,7 +44,12 @@ RUN apt-get install -y --force-yes -o Dpkg::Options::="--force-confdef" -o Dpkg:
     php8.1-sqlite3 php8.1-imap php8.1-redis php8.1-dev php8.1-mysql php8.1-soap \
     php8.1-intl php8.1-readline php8.1-msgpack php8.1-igbinary php8.1-gmp
 
-RUN apt-get update -y
+RUN apt-get update -y && \
+    apt-get autoremove -y && \
+    apt-get clean
+
+RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN setcap "cap_net_bind_service=+ep" /usr/bin/php8.1
 
 #
 # Git
@@ -86,10 +89,13 @@ RUN update-alternatives --set php /usr/bin/php8.1
 RUN curl -sS https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer
 
+ENV COMPOSER_ALLOW_SUPERUSER 1
+
 #
 # node version manager setup
 #
-ENV NVM_DIR="/root/.nvm"
+ENV NVM_DIR "/root/.nvm"
+
 RUN if [ -d "$NVM_DIR" ]; then rm -rf "$NVM_DIR"; fi
 RUN mkdir -p "$NVM_DIR"
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | sh
@@ -100,9 +106,9 @@ RUN nvm install "$NODE_VERSION" && \
     nvm alias default "$NODE_VERSION" && \
     nvm use default
 
-ENV NODE_PATH="$NVM_DIR/versions/node/v$NODE_VERSION/lib/node_modules"
-ENV PATH="$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH"
-ENV NPX_PATH="$NVM_DIR/versions/node/v$NODE_VERSION/bin/npx"
+ENV NODE_PATH "$NVM_DIR/versions/node/v$NODE_VERSION/lib/node_modules"
+ENV PATH      "$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH"
+ENV NPX_PATH  "$NVM_DIR/versions/node/v$NODE_VERSION/bin/npx"
 
 #
 # npm setup

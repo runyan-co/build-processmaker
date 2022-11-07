@@ -1,18 +1,14 @@
-#!/usr/bin/env sh
-set -ex
+#!/usr/bin/env bash
+PM_BRANCH="feature/FOUR-6832"
 
-export PM_VERSION="4.3.0-RC2"
+export PM_BRANCH
 
 ENTRY=false
 APP=false
 BASE=false
 ALL=false
-REMOVE=false
 
 for ARG in "$@"; do
-  if [ "1" = "$(echo "$ARG" | grep -c -m 1 -- "--rm")" ]; then
-    REMOVE=true
-  fi
   if [ "1" = "$(echo "$ARG" | grep -c -m 1 -- "--entry")" ]; then
     ENTRY=true
   fi
@@ -27,10 +23,14 @@ for ARG in "$@"; do
   fi
 done
 
+if [ "$ALL" = "false" ] && [ "$ENTRY" = "false" ] && \
+   [ "$APP" = "false" ] && [ "$BASE" = "false" ]; then
+  echo "No build arguments found" && exit 1
+fi
+
 {
   if [ "$BASE" = "true" ] || [ "$ALL" = "true" ]; then
     docker image build \
-      --build-arg PM_VERSION="$PM_VERSION" \
       --build-arg PHP_VERSION=8.1 \
       --build-arg NODE_VERSION=16.15.0 \
       --tag pm-v4-base:latest \
@@ -41,7 +41,7 @@ done
 
   if [ "$APP" = "true" ] || [ "$ALL" = "true" ]; then
     docker image build \
-      --build-arg PM_VERSION="$PM_VERSION" \
+      --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4-app:latest \
       --shm-size=256m \
       --file=Dockerfile.app \
@@ -50,7 +50,7 @@ done
 
   if [ "$ENTRY" = "true" ] || [ "$ALL" = "true" ]; then
     docker image build \
-      --build-arg PM_VERSION="$PM_VERSION" \
+      --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4:latest \
       --shm-size=256m \
       --file=Dockerfile \
