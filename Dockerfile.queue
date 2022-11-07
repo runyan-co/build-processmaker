@@ -1,0 +1,22 @@
+FROM pm-v4-packages:latest AS queue-app
+
+#
+# setup default shell as bash
+#
+SHELL ["/bin/bash", "-c"]
+
+#
+# supervisord
+#
+COPY stubs/queue-services-php-${PHP_VERSION}.conf /etc/supervisor/conf.d/queue.conf
+
+#
+# container entrypoint
+#
+COPY ./container.sh /usr/local/bin/entrypoint
+RUN chmod +x /usr/local/bin/entrypoint
+
+#
+# entrypoint
+#
+CMD ["/usr/local/bin/entrypoint", "--queue"]

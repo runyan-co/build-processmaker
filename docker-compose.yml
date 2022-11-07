@@ -1,7 +1,7 @@
-version: "1"
+version: "2"
 services:
   web:
-    image: pm-v4:latest
+    image: pm-v4-web:latest
     env_file:
       - .env
     ports:
@@ -10,6 +10,19 @@ services:
     environment:
       - PM_APP_PORT
       - PM_BROADCASTER_PORT
+    volumes:
+      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
+      - storage:/home/pm-v4/storage
+    links:
+      - redis
+      - mysql
+    depends_on:
+      - mysql
+      - redis
+  queue:
+    image: pm-v4-queue:latest
+    env_file:
+      - .env
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - storage:/home/pm-v4/storage

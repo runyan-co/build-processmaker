@@ -1,1 +1,7 @@
 .env
+.env.build
+.idea/
+/vendor/
+packages/
+scripts/vendor/
+scripts/composer.lock

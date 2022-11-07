@@ -1,0 +1,18 @@
+{
+  "config": {
+    "allow-plugins": true
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/ProcessMaker/SocialiteProviders"
+    },
+    {
+      "type": "path",
+      "url": "/opt/composer-packages/*",
+      "options": {
+        "symlink": true
+      }
+    }
+  ]
+}

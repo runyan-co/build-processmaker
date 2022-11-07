@@ -1,16 +1,27 @@
 #!/usr/bin/env bash
-PM_BRANCH="feature/FOUR-6832"
+if [ -f .env ]; then
+  source .env
+fi
 
+export APP_CIPHER
 export PM_BRANCH
 
-ENTRY=false
 APP=false
 BASE=false
+PACKAGES=false
+WEB=false
+QUEUE=false
 ALL=false
 
 for ARG in "$@"; do
-  if [ "1" = "$(echo "$ARG" | grep -c -m 1 -- "--entry")" ]; then
-    ENTRY=true
+  if [ "1" = "$(echo "$ARG" | grep -c -m 1 -- "--web")" ]; then
+    WEB=true
+  fi
+  if [ "1" = "$(echo "$ARG" | grep -c -m 1 -- "--queue")" ]; then
+    QUEUE=true
+  fi
+  if [ "1" = "$(echo "$ARG" | grep -c -m 1 -- "--packages")" ]; then
+    PACKAGES=true
   fi
   if [ "1" = "$(echo "$ARG" | grep -c -m 1 -- "--app")" ]; then
     APP=true
@@ -23,8 +34,12 @@ for ARG in "$@"; do
   fi
 done
 
-if [ "$ALL" = "false" ] && [ "$ENTRY" = "false" ] && \
-   [ "$APP" = "false" ] && [ "$BASE" = "false" ]; then
+if [ "$ALL" = "false" ] &&
+  [ "$PACKAGES" = "false" ] &&
+  [ "$APP" = "false" ] &&
+  [ "$WEB" = "false" ] &&
+  [ "$QUEUE" = "false" ] &&
+  [ "$BASE" = "false" ]; then
   echo "No build arguments found" && exit 1
 fi
 
@@ -33,6 +48,9 @@ fi
     docker image build \
       --build-arg PHP_VERSION=8.1 \
       --build-arg NODE_VERSION=16.15.0 \
+      --build-arg GITHUB_OAUTH_TOKEN="$GITHUB_OAUTH_TOKEN" \
+      --build-arg GITHUB_USERNAME="$GITHUB_USERNAME" \
+      --build-arg GITHUB_EMAIL="$GITHUB_EMAIL" \
       --tag pm-v4-base:latest \
       --file=Dockerfile.base \
       --shm-size=256m \
@@ -40,6 +58,13 @@ fi
   fi
 
   if [ "$APP" = "true" ] || [ "$ALL" = "true" ]; then
+    #
+    # generate the .env file
+    #
+    rm .env.build
+    cp .env.example .env.build
+    echo "APP_KEY=$(php scripts/generate-app-key.php)" >>.env.build
+
     docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4-app:latest \
@@ -48,12 +73,39 @@ fi
       --compress .
   fi
 
-  if [ "$ENTRY" = "true" ] || [ "$ALL" = "true" ]; then
+  if [ "$PACKAGES" = "true" ] || [ "$ALL" = "true" ]; then
+    export PM_COMPOSER_PACKAGES_BUILD_PATH="packages/"
+
+    if [ ! -d "$PM_COMPOSER_PACKAGES_BUILD_PATH" ]; then
+      rm -rf "$PM_COMPOSER_PACKAGES_BUILD_PATH"
+      cp -r "$PM_COMPOSER_PACKAGES_SOURCE_PATH/." "$PM_COMPOSER_PACKAGES_BUILD_PATH"
+    fi
+
     docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
-      --tag=pm-v4:latest \
+      --build-arg PM_COMPOSER_PACKAGES_BUILD_PATH="$PM_COMPOSER_PACKAGES_BUILD_PATH" \
+      --tag=pm-v4-packages:latest \
+      --no-cache \
       --shm-size=256m \
-      --file=Dockerfile \
+      --file=Dockerfile.packages \
+      --compress .
+  fi
+
+  if [ "$WEB" = "true" ] || [ "$ALL" = "true" ]; then
+    docker image build \
+      --tag=pm-v4-web:latest \
+      --shm-size=256m \
+      --file=Dockerfile.web \
+      --no-cache=true \
+      --compress .
+  fi
+
+  if [ "$QUEUE" = "true" ] || [ "$ALL" = "true" ]; then
+    docker image build \
+      --build-arg PM_BRANCH="$PM_BRANCH" \
+      --tag=pm-v4-queue:latest \
+      --shm-size=256m \
+      --file=Dockerfile.queue \
       --no-cache=true \
       --compress .
   fi
