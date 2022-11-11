@@ -8,7 +8,6 @@ SHELL ["/bin/bash", "-c"]
 #
 # Build arguments
 #
-ARG PHP_VERSION
 ARG NODE_VERSION
 ARG GITHUB_USERNAME
 ARG GITHUB_EMAIL
@@ -22,7 +21,6 @@ ENV DEBIAN_FRONTEND          noninteractive
 ENV DOCKERVERSION            20.10.5
 ENV PM_APP_PORT              8080
 ENV PM_BROADCASTER_PORT      6004
-ENV PHP_VERSION              ${PHP_VERSION}
 ENV PM_DOCKER_SOCK           /var/run/docker.sock
 
 #
@@ -68,12 +66,12 @@ RUN git config --global user.name ${GITHUB_USERNAME} && \
 #
 # copy php config files
 #
-COPY stubs/php/${PHP_VERSION}/conf.d /etc/php/${PHP_VERSION}/cli/conf.d
+COPY stubs/php/8.1/conf.d /etc/php/8.1/cli/conf.d
 
 #
 # misc. php config setup
 #
-RUN sed -i 's/www-data/root/g' /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf && \
+RUN sed -i 's/www-data/root/g' /etc/php/8.1/fpm/pool.d/www.conf && \
     sed -i "s/error_reporting = .*/error_reporting = E_ALL/" /etc/php/8.1/cli/php.ini && \
     sed -i "s/display_errors = .*/display_errors = On/" /etc/php/8.1/cli/php.ini && \
     sed -i "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" /etc/php/8.1/cli/php.ini && \
@@ -82,10 +80,15 @@ RUN sed -i 's/www-data/root/g' /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf && \
     sed -i "s/display_errors = .*/display_errors = Off/" /etc/php/8.1/fpm/php.ini
 
 #
+# set the php binary env var
+#
+ENV PHP_BINARY=/usr/bin/php8.1
+
+#
 # create directory for the php socket
 #
 RUN mkdir -p /run/php && \
-    update-alternatives --set php /usr/bin/php8.1
+    update-alternatives --set php "$PHP_BINARY"
 
 #
 # composer setup
@@ -124,3 +127,5 @@ RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${
     tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker && \
     rm -f docker-${DOCKERVERSION}.tgz && \
     ln -s /usr/local/bin/docker /usr/bin/docker
+
+RUN sysctl --system

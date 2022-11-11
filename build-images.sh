@@ -45,7 +45,7 @@ fi
 
 {
   if [ "$BASE" = "true" ] || [ "$ALL" = "true" ]; then
-    docker image build \
+    if ! docker image build \
       --build-arg PHP_VERSION=8.1 \
       --build-arg NODE_VERSION=16.15.0 \
       --build-arg GITHUB_OAUTH_TOKEN="$GITHUB_OAUTH_TOKEN" \
@@ -54,23 +54,29 @@ fi
       --tag pm-v4-base:latest \
       --file=Dockerfile.base \
       --shm-size=256m \
-      --compress .
+      --compress .; then
+        exit 1;
+      fi
   fi
 
   if [ "$APP" = "true" ] || [ "$ALL" = "true" ]; then
     #
     # generate the .env file
     #
-    rm .env.build
+    rm -f .env.build
     cp .env.example .env.build
     echo "APP_KEY=$(php scripts/generate-app-key.php)" >>.env.build
 
-    docker image build \
+    if ! docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4-app:latest \
       --shm-size=256m \
       --file=Dockerfile.app \
-      --compress .
+      --compress .; then
+        exit 1;
+    fi
+
+    rm .env.build
   fi
 
   if [ "$PACKAGES" = "true" ] || [ "$ALL" = "true" ]; then
@@ -81,18 +87,22 @@ fi
       cp -r "$PM_COMPOSER_PACKAGES_SOURCE_PATH/." "$PM_COMPOSER_PACKAGES_BUILD_PATH"
     fi
 
-    docker image build \
+    if ! docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
       --build-arg PM_COMPOSER_PACKAGES_BUILD_PATH="$PM_COMPOSER_PACKAGES_BUILD_PATH" \
       --tag=pm-v4-packages:latest \
       --no-cache \
       --shm-size=256m \
       --file=Dockerfile.packages \
-      --compress .
+      --compress .; then
+        rm -rf "$PM_COMPOSER_PACKAGES_BUILD_PATH"
+        exit 1;
+      fi
   fi
 
   if [ "$WEB" = "true" ] || [ "$ALL" = "true" ]; then
     docker image build \
+      --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4-web:latest \
       --shm-size=256m \
       --file=Dockerfile.web \

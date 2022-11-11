@@ -49,8 +49,36 @@ if (!($pm_directory = getenv('PM_DIRECTORY'))) {
 
 try {
     $composer_json = getComposerJson($pm_directory);
-    $packages = array_values(array_keys(Arr::get($composer_json,'extra.processmaker.enterprise')));
 
+	$packages = array_values(array_keys(
+		Arr::get($composer_json,'extra.processmaker.enterprise')
+    ));
+
+    // Sort and remove these packages with the corresponding name
+	// found in the array. This is so we can prepend them later
+	// so they'll be in the correct installation order
+    $packages = collect($packages)->values()->sort()->reject(function ($package) {
+        return in_array($package, [
+            'docker-executor-node-ssr',
+            'connector-send-email',
+            'package-collections',
+            'package-savedsearch',
+            'packages',
+        ]);
+    });
+
+    // Prepend the removed packages to make sure they're
+	// installed first, assuming the returned order is
+	// relied on for installation
+    $packages = $packages->prepend('package-collections')
+                         ->prepend('package-savedsearch')
+                         ->prepend('connector-send-email')
+                         ->prepend('docker-executor-node-ssr')
+                         ->prepend('packages')
+                         ->toArray();
+
+	// Print each package name on a new line
+	// with an end of line character
 	foreach ($packages as $package) {
 		echo $package.PHP_EOL;
 	}

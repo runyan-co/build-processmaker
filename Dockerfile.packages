@@ -52,6 +52,7 @@ ENV PM_ENV ".env.setup"
 RUN rm -f "$PM_ENV" && \
     touch "$PM_ENV" && \
     chmod -x "$PM_ENV" && \
+    echo "PHP_BINARY=$PHP_BINARY" >>"$PM_ENV" && \
     echo "PM_COMPOSER_PACKAGES_PATH=$PM_COMPOSER_PACKAGES_PATH" >>"$PM_ENV" && \
     echo "PM_SETUP_PATH=$PM_SETUP_PATH" >>"$PM_ENV" && \
     echo "PM_DIRECTORY=$PM_DIRECTORY" >>"$PM_ENV" && \

@@ -14,6 +14,7 @@ ARG PM_BRANCH
 # pull repo, unzip, copy to working dir
 #
 ENV PM_DIRECTORY "/home/pm-v4"
+ENV PM_BRANCH ${PM_BRANCH}
 ENV PM_GIT_REPO_URI "https://github.com/ProcessMaker/processmaker.git"
 
 #
@@ -39,7 +40,12 @@ COPY .env.build .
 #
 # composer install
 #
-RUN composer install --optimize-autoloader --no-ansi --no-interaction && \
+RUN composer install  \
+    --no-progress  \
+    --no-suggest  \
+    --optimize-autoloader  \
+    --no-ansi  \
+    --no-interaction && \
     composer clear-cache --no-ansi --no-interaction
 
 #
