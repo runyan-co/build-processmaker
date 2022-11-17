@@ -1,6 +1,28 @@
 services:
+  installer:
+    image: pm-v4-installer:latest
+    env_file:
+      - .env
+    environment:
+      - PM_APP_PORT
+      - PM_BROADCASTER_PORT
+      - PM_BRANCH
+    volumes:
+      - type: bind
+        source: ${PM_DOCKER_SOCK}
+        target: /var/run/docker.sock
+      - storage:/home/pm-v4/storage
+      - public:/home/pm-v4/public
+      - composer-packages:/opt/composer-packages
+    links:
+      - redis
+      - mysql
+    depends_on:
+      - mysql
+      - redis
   web:
     image: pm-v4-web:latest
+    restart: always
     env_file:
       - .env
     ports:
@@ -14,33 +36,35 @@ services:
       - type: bind
         source: ${PM_DOCKER_SOCK}
         target: /var/run/docker.sock
-      - type: volume
-        source: storage
-        target: /home/pm-v4/storage
+      - storage:/home/pm-v4/storage
+      - public:/home/pm-v4/public
+      - composer-packages:/opt/composer-packages
     links:
       - redis
       - mysql
     depends_on:
       - mysql
       - redis
+      - installer
   queue:
     image: pm-v4-queue:latest
-    restart: on-failure
+    restart: always
     env_file:
       - .env
     volumes:
       - type: bind
         source: ${PM_DOCKER_SOCK}
         target: /var/run/docker.sock
-      - type: volume
-        source: storage
-        target: /home/pm-v4/storage
+      - storage:/home/pm-v4/storage
+      - public:/home/pm-v4/public
+      - composer-packages:/opt/composer-packages
     links:
       - redis
       - mysql
     depends_on:
       - mysql
       - redis
+      - installer
   redis:
     image: redis:7
     restart: on-failure
@@ -58,3 +82,5 @@ volumes:
   db-data: {}
   redis-data: {}
   storage: {}
+  public: {}
+  composer-packages: {}

@@ -38,6 +38,12 @@ RUN git clone --filter=tree:0 --branch ${PM_BRANCH} "$PM_GIT_REPO_URI" .
 COPY .env.build .
 
 #
+# Move composer.json over to storage and then link it
+#
+RUN mv composer.json "$PM_DIRECTORY/storage" && \
+    ln -s "$PM_DIRECTORY/storage/composer.json" .
+
+#
 # composer install
 #
 RUN composer install  \

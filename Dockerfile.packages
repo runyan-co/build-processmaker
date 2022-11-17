@@ -1,4 +1,4 @@
-FROM pm-v4-app:latest AS app-packages
+FROM pm-v4-app:latest AS packages
 
 #
 # setup default shell as bash
@@ -36,11 +36,14 @@ RUN mv config.json $(cat .composer)
 # we will use to store various build scripts,
 # config files, and other usefil tools/files
 #
-RUN rm -rf "$PM_SETUP_PATH" && mkdir -p "$PM_SETUP_PATH"
+RUN rm -rf "$PM_SETUP_PATH" && \
+    mkdir -p "$PM_SETUP_PATH"
+
 WORKDIR $PM_SETUP_PATH
 COPY scripts/ scripts/
-RUN chmod -x ./scripts/*.php
-RUN cd scripts/ &&  \
+
+RUN chmod -x ./scripts/*.php &&\
+    cd scripts/ &&  \
     composer install --optimize-autoloader --no-ansi --no-interaction && \
     composer clear-cache --no-ansi --no-interaction
 
@@ -64,7 +67,3 @@ RUN rm -f "$PM_ENV" && \
     echo "NPX_PATH=$NPX_PATH" >>"$PM_ENV"
 
 WORKDIR $PM_DIRECTORY
-
-
-
-

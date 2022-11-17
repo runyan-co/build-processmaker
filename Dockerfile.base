@@ -118,7 +118,7 @@ ENV NPX_PATH  "$NVM_DIR/versions/node/v$NODE_VERSION/bin/npx"
 #
 # npm setup
 #
-RUN npm install -g npm@8.9
+#RUN npm install -g npm@8.9
 
 #
 # docker client
