@@ -5,6 +5,7 @@ fi
 
 export APP_CIPHER
 export PM_BRANCH
+export PM_INSTALL_ENTERPRISE_PACKAGES
 
 PHP_VERSION=8.1
 NODE_VERSION=16.18.1
@@ -61,7 +62,7 @@ fi
       --build-arg GITHUB_EMAIL="$GITHUB_EMAIL" \
       --tag pm-v4-base:latest \
       --file=Dockerfile.base \
-      --shm-size=128m \
+      --shm-size=512m \
       --compress .; then
         exit 1;
       fi
@@ -78,7 +79,7 @@ fi
     if ! docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4-app:latest \
-      --shm-size=128m \
+      --shm-size=512m \
       --file=Dockerfile.app \
       --compress .; then
         rm .env.build && exit 1
@@ -88,26 +89,34 @@ fi
   if [ "$PACKAGES" = "true" ] || [ "$ALL" = "true" ]; then
     export PM_COMPOSER_PACKAGES_BUILD_PATH="packages/"
 
-    rm -rf "$PM_COMPOSER_PACKAGES_BUILD_PATH"
+    removePackages() {
+      rm -rf "$PM_COMPOSER_PACKAGES_BUILD_PATH"
+    }
+
+    removePackages
+
     cp -r "$PM_COMPOSER_PACKAGES_SOURCE_PATH/." "$PM_COMPOSER_PACKAGES_BUILD_PATH"
 
     if ! docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
       --build-arg PM_COMPOSER_PACKAGES_BUILD_PATH="$PM_COMPOSER_PACKAGES_BUILD_PATH" \
+      --build-arg PM_INSTALL_ENTERPRISE_PACKAGES="$PM_INSTALL_ENTERPRISE_PACKAGES" \
       --tag=pm-v4-packages:latest \
       --no-cache \
-      --shm-size=256m \
+      --shm-size=512m \
       --file=Dockerfile.packages \
       --compress .; then
-        rm -rf "$PM_COMPOSER_PACKAGES_BUILD_PATH" && exit 1;
+        removePackages && exit 1;
       fi
+
+      removePackages
   fi
 
   if [ "$INSTALLER" = "true" ] || [ "$ALL" = "true" ]; then
     if ! docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4-installer:latest \
-      --shm-size=256m \
+      --shm-size=512m \
       --file=Dockerfile.installer \
       --no-cache=true \
       --compress .; then
@@ -119,7 +128,7 @@ fi
     if ! docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4-web:latest \
-      --shm-size=256m \
+      --shm-size=512m \
       --file=Dockerfile.web \
       --no-cache=true \
       --compress .; then
@@ -131,7 +140,7 @@ fi
     if ! docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4-queue:latest \
-      --shm-size=256m \
+      --shm-size=512m \
       --file=Dockerfile.queue \
       --no-cache=true \
       --compress .; then

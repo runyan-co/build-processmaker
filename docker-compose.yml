@@ -1,12 +1,40 @@
 services:
+  dd-agent:
+    image: gcr.io/datadoghq/agent:7
+    restart: on-failure
+    pid: host
+    cgroup_parent: host
+    env_file:
+      - .env
+    networks:
+      - pm-v4
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /etc/passwd:/etc/passwd:ro
+    ports:
+      - 8126:8126
+    environment:
+      - DD_API_KEY
+      - DD_APM_ENABLED
+      - DD_SITE
+      - DD_APM_NON_LOCAL_TRAFFIC
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC
+      - DD_PROCESS_AGENT_ENABLED
+      - DD_LOGS_ENABLED
+      - DD_CONTAINER_ENV_AS_TAGS
   installer:
     image: pm-v4-installer:latest
+    networks:
+      - pm-v4
     env_file:
       - .env
     environment:
       - PM_APP_PORT
       - PM_BROADCASTER_PORT
       - PM_BRANCH
+      - PM_INSTALL_ENTERPRISE_PACKAGES
     volumes:
       - type: bind
         source: ${PM_DOCKER_SOCK}
@@ -23,6 +51,8 @@ services:
   web:
     image: pm-v4-web:latest
     restart: always
+    networks:
+      - pm-v4
     env_file:
       - .env
     ports:
@@ -49,6 +79,8 @@ services:
   queue:
     image: pm-v4-queue:latest
     restart: always
+    networks:
+      - pm-v4
     env_file:
       - .env
     volumes:
@@ -68,11 +100,15 @@ services:
   redis:
     image: redis:7
     restart: on-failure
+    networks:
+      - pm-v4
     volumes:
       - redis-data:/data
   mysql:
     image: mysql:8
     restart: on-failure
+    networks:
+      - pm-v4
     environment:
       MYSQL_DATABASE: processmaker
       MYSQL_ROOT_PASSWORD: password
@@ -84,3 +120,5 @@ volumes:
   storage: {}
   public: {}
   composer-packages: {}
+networks:
+  pm-v4: {}

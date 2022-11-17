@@ -77,10 +77,10 @@
   # build and install the script executors
   #
   buildScriptExecutors() {
-    DOCKER_BUILDKIT=0 php artisan docker-executor-php:install --no-interaction --no-ansi &
-    DOCKER_BUILDKIT=0 php artisan docker-executor-node:install --no-interaction --no-ansi &
-    DOCKER_BUILDKIT=0 php artisan docker-executor-lua:install --no-interaction --no-ansi &
-    wait;
+    DOCKER_BUILDKIT=0 php artisan docker-executor-php:install --no-interaction --no-ansi && \
+    DOCKER_BUILDKIT=0 php artisan docker-executor-node:install --no-interaction --no-ansi && \
+    DOCKER_BUILDKIT=0 php artisan docker-executor-lua:install --no-interaction --no-ansi;
+
     echo "Script executors built!"
   }
 
@@ -141,10 +141,12 @@
       fi
 
       #
-      # install the ProcessMaker-specific enterprise packages
+      # install the ProcessMaker-specific enterprise packages, if desired
       #
-      if ! installEnterprisePackages; then
-        echo "Could not install enterprise packages" && exit 1
+      if [ "$PM_INSTALL_ENTERPRISE_PACKAGES" = true ]; then
+        if ! installEnterprisePackages; then
+          echo "Could not install enterprise packages" && exit 1
+        fi
       fi
 
       #
@@ -157,8 +159,8 @@
   #
   # Source a few necessary env variables
   #
-  if [ -f "/.env.setup" ]; then
-    source "/.env.setup"
+  if [ -f /.env.setup ]; then
+    source /.env.setup
   fi
 
   #
