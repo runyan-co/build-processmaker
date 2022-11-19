@@ -9,7 +9,7 @@ services:
     networks:
       - pm-v4
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
       - /etc/passwd:/etc/passwd:ro
@@ -26,19 +26,37 @@ services:
       - DD_CONTAINER_ENV_AS_TAGS
   installer:
     image: pm-v4-installer:latest
+    build:
+      context: .
+      target: installer
+      no_cache: true
+      args:
+        PHP_VERSION: 8.1
+        NODE_VERSION: 16.18.1
+        GITHUB_OAUTH_TOKEN: ${GITHUB_OAUTH_TOKEN}
+        GITHUB_USERNAME: ${GITHUB_USERNAME}
+        GITHUB_EMAIL: ${GITHUB_EMAIL}
+        PM_COMPOSER_PACKAGES_BUILD_PATH: ${PM_COMPOSER_PACKAGES_BUILD_PATH}
+        PM_INSTALL_ENTERPRISE_PACKAGES: ${PM_INSTALL_ENTERPRISE_PACKAGES}
+        PM_APP_PORT: ${PM_APP_PORT}
+        PM_BROADCASTER_PORT: ${PM_BROADCASTER_PORT}
+        PM_DOCKER_SOCK: ${PM_DOCKER_SOCK}
+        PM_DOMAIN: ${PM_DOMAIN}
+        PM_BRANCH: ${PM_BRANCH}
     networks:
       - pm-v4
     env_file:
       - .env
     environment:
+      - APP_CIPHER
       - PM_APP_PORT
+      - PM_DOMAIN
+      - PM_DOCKER_SOCK
       - PM_BROADCASTER_PORT
       - PM_BRANCH
       - PM_INSTALL_ENTERPRISE_PACKAGES
     volumes:
-      - type: bind
-        source: ${PM_DOCKER_SOCK}
-        target: /var/run/docker.sock
+      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - storage:/home/pm-v4/storage
       - public:/home/pm-v4/public
       - composer-packages:/opt/composer-packages
@@ -48,24 +66,34 @@ services:
     depends_on:
       - mysql
       - redis
+      - dd-agent
   web:
     image: pm-v4-web:latest
     restart: always
+    env_file: .env
+    build:
+      context: .
+      target: web
+      args:
+        PHP_VERSION: 8.1
+        NODE_VERSION: 16.18.1
+        GITHUB_OAUTH_TOKEN: ${GITHUB_OAUTH_TOKEN}
+        GITHUB_USERNAME: ${GITHUB_USERNAME}
+        GITHUB_EMAIL: ${GITHUB_EMAIL}
+        PM_COMPOSER_PACKAGES_BUILD_PATH: ${PM_COMPOSER_PACKAGES_BUILD_PATH}
+        PM_INSTALL_ENTERPRISE_PACKAGES: ${PM_INSTALL_ENTERPRISE_PACKAGES}
+        PM_APP_PORT: ${PM_APP_PORT}
+        PM_BROADCASTER_PORT: ${PM_BROADCASTER_PORT}
+        PM_DOCKER_SOCK: ${PM_DOCKER_SOCK}
+        PM_DOMAIN: ${PM_DOMAIN}
+        PM_BRANCH: ${PM_BRANCH}
     networks:
       - pm-v4
-    env_file:
-      - .env
     ports:
       - ${PM_APP_PORT}:80
       - ${PM_BROADCASTER_PORT}:6001
-    environment:
-      - PM_APP_PORT
-      - PM_BROADCASTER_PORT
-      - PM_BRANCH
     volumes:
-      - type: bind
-        source: ${PM_DOCKER_SOCK}
-        target: /var/run/docker.sock
+      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - storage:/home/pm-v4/storage
       - public:/home/pm-v4/public
       - composer-packages:/opt/composer-packages
@@ -76,17 +104,34 @@ services:
       - mysql
       - redis
       - installer
+      - dd-agent
   queue:
     image: pm-v4-queue:latest
+    build:
+      context: .
+      target: queue
+      args:
+        PHP_VERSION: 8.1
+        NODE_VERSION: 16.18.1
+        GITHUB_OAUTH_TOKEN: ${GITHUB_OAUTH_TOKEN}
+        GITHUB_USERNAME: ${GITHUB_USERNAME}
+        GITHUB_EMAIL: ${GITHUB_EMAIL}
+        PM_COMPOSER_PACKAGES_BUILD_PATH: ${PM_COMPOSER_PACKAGES_BUILD_PATH}
+        PM_INSTALL_ENTERPRISE_PACKAGES: ${PM_INSTALL_ENTERPRISE_PACKAGES}
+        PM_APP_PORT: ${PM_APP_PORT}
+        PM_BROADCASTER_PORT: ${PM_BROADCASTER_PORT}
+        PM_DOCKER_SOCK: ${PM_DOCKER_SOCK}
+        PM_DOMAIN: ${PM_DOMAIN}
+        PM_BRANCH: ${PM_BRANCH}
     restart: always
+    env_file: .env
+    deploy:
+      replicas: 2
+      mode: replicated
     networks:
       - pm-v4
-    env_file:
-      - .env
     volumes:
-      - type: bind
-        source: ${PM_DOCKER_SOCK}
-        target: /var/run/docker.sock
+      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - storage:/home/pm-v4/storage
       - public:/home/pm-v4/public
       - composer-packages:/opt/composer-packages
@@ -97,9 +142,12 @@ services:
       - mysql
       - redis
       - installer
+      - dd-agent
   redis:
     image: redis:7
     restart: on-failure
+    depends_on:
+      - dd-agent
     networks:
       - pm-v4
     volumes:
@@ -107,6 +155,8 @@ services:
   mysql:
     image: mysql:8
     restart: on-failure
+    depends_on:
+      - dd-agent
     networks:
       - pm-v4
     environment:

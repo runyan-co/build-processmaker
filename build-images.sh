@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-if [ -f .env ]; then
-  source .env
+if [ ! -f .env ]; then
+  cp .env.build .env
 fi
+
+source .env
 
 export APP_CIPHER
 export PM_BRANCH
@@ -43,23 +45,30 @@ for ARG in "$@"; do
 done
 
 if [ "$ALL" = "false" ] && \
-  [ "$PACKAGES" = "false" ] && \
-  [ "$APP" = "false" ] && \
-  [ "$WEB" = "false" ] && \
-  [ "$QUEUE" = "false" ] && \
-  [ "$INSTALLER" = "false" ] && \
-  [ "$BASE" = "false" ]; then \
+   [ "$PACKAGES" = "false" ] && \
+   [ "$APP" = "false" ] && \
+   [ "$WEB" = "false" ] && \
+   [ "$QUEUE" = "false" ] && \
+   [ "$INSTALLER" = "false" ] && \
+   [ "$BASE" = "false" ]; then \
   echo "No build arguments found" && exit 1
 fi
 
 {
   if [ "$BASE" = "true" ] || [ "$ALL" = "true" ]; then
+    #
+    # Base
+    #
     if ! docker image build \
       --build-arg PHP_VERSION="$PHP_VERSION" \
       --build-arg NODE_VERSION="$NODE_VERSION" \
       --build-arg GITHUB_OAUTH_TOKEN="$GITHUB_OAUTH_TOKEN" \
       --build-arg GITHUB_USERNAME="$GITHUB_USERNAME" \
       --build-arg GITHUB_EMAIL="$GITHUB_EMAIL" \
+      --build-arg PM_APP_PORT="$PM_APP_PORT" \
+      --build-arg PM_BROADCASTER_PORT="$PM_BROADCASTER_PORT" \
+      --build-arg PM_DOCKER_SOCK="$PM_DOCKER_SOCK" \
+      --build-arg PM_DOMAIN="$PM_DOMAIN" \
       --tag pm-v4-base:latest \
       --file=Dockerfile.base \
       --shm-size=512m \
@@ -70,11 +79,12 @@ fi
 
   if [ "$APP" = "true" ] || [ "$ALL" = "true" ]; then
     #
-    # generate the .env file
+    # App
     #
-    rm -f .env.build
-    cp .env.example .env.build
-    echo "APP_KEY=$(php scripts/generate-app-key.php)" >>.env.build
+    cp stubs/.env.example .
+    cp ~/snippets/processmaker/GenerateUsers.php .
+
+    echo "APP_KEY=$(php scripts/generate-app-key.php)" >>.env.example
 
     if ! docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
@@ -82,11 +92,19 @@ fi
       --shm-size=512m \
       --file=Dockerfile.app \
       --compress .; then
-        rm .env.build && exit 1
+        rm .env.example
+        rm GenerateUsers.php
+        exit 1
     fi
+
+    rm .env.example
+    rm GenerateUsers.php
   fi
 
   if [ "$PACKAGES" = "true" ] || [ "$ALL" = "true" ]; then
+    #
+    # Packages
+    #
     export PM_COMPOSER_PACKAGES_BUILD_PATH="packages/"
 
     removePackages() {
@@ -94,7 +112,6 @@ fi
     }
 
     removePackages
-
     cp -r "$PM_COMPOSER_PACKAGES_SOURCE_PATH/." "$PM_COMPOSER_PACKAGES_BUILD_PATH"
 
     if ! docker image build \
@@ -113,6 +130,9 @@ fi
   fi
 
   if [ "$INSTALLER" = "true" ] || [ "$ALL" = "true" ]; then
+    #
+    # Installer
+    #
     if ! docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4-installer:latest \
@@ -125,6 +145,9 @@ fi
   fi
 
   if [ "$WEB" = "true" ] || [ "$ALL" = "true" ]; then
+    #
+    # Web
+    #
     if ! docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4-web:latest \
@@ -137,6 +160,9 @@ fi
   fi
 
   if [ "$QUEUE" = "true" ] || [ "$ALL" = "true" ]; then
+    #
+    # Queue
+    #
     if ! docker image build \
       --build-arg PM_BRANCH="$PM_BRANCH" \
       --tag=pm-v4-queue:latest \

@@ -11,7 +11,7 @@
     echo "ProcessMaker in maintenance mode..." && sleep 3 && exit 0
   fi
 
-  composer update --optimize-autoloader --no-ansi --no-suggest
+  composer update --optimize-autoloader --no-ansi
 
   bash -c '"$PHP_BINARY" "$PM_DIRECTORY/artisan" horizon'
 }
