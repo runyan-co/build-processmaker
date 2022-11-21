@@ -14,13 +14,13 @@
       for PACKAGE in $PM_PACKAGES; do
         {
           echo "Installing processmaker/$PACKAGE..."
-          composer require "processmaker/$PACKAGE" --no-suggest --quiet --no-ansi --no-interaction
+          composer require "processmaker/$PACKAGE" --profile --no-suggest --no-ansi --no-interaction
           php artisan "$PACKAGE:install" --no-ansi --no-interaction
           php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction
         }
       done
 
-      composer dumpautoload -o --no-ansi --no-interaction --quiet
+      composer dumpautoload --optimize-autoloader --no-ansi --no-interaction --profile
       echo "Enterprise packages installed!"
     else
       echo "Enterprise packages already installed"
@@ -40,27 +40,22 @@
       mv .env.example "$ENV_REALPATH"
     fi
 
-    ln -s "$ENV_REALPATH" .env
+    ln -s "$ENV_REALPATH" ./.env
 
     #
     # Make sure these are defined for use in the .env
     #
     {
-      echo "APP_URL=http://${PM_DOMAIN}:${PM_APP_PORT}"
-      echo "BROADCASTER_HOST=http://${PM_DOMAIN}:${PM_BROADCASTER_PORT}"
-      echo "SESSION_DOMAIN=${PM_DOMAIN}"
-      echo "HOME=${PM_DIRECTORY}"
-      echo "NODE_BIN_PATH=$(which node)"
-      echo "PROCESSMAKER_SCRIPTS_DOCKER=$(which docker)"
-      echo "PROCESSMAKER_SCRIPTS_HOME=${PM_DIRECTORY}/storage/app/scripts"
+      echo "APP_URL=http://${PM_DOMAIN}:${PM_APP_PORT}";
+      echo "BROADCASTER_HOST=http://${PM_DOMAIN}:${PM_BROADCASTER_PORT}";
+      echo "SESSION_DOMAIN=${PM_DOMAIN}";
+      echo "HOME=${PM_DIRECTORY}";
+      echo "NODE_BIN_PATH=$(which node)";
+      echo "PROCESSMAKER_SCRIPTS_DOCKER=$(which docker)";
+      echo "PROCESSMAKER_SCRIPTS_HOME=${PM_DIRECTORY}/storage/app/scripts";
     } >>"$ENV_REALPATH"
 
-    if [ ! -L "$PM_DIRECTORY/public/storage" ]; then
-      php artisan storage:link --no-interaction --no-ansi
-    fi
-
-    php artisan package:discover --no-interaction --no-ansi
-    php artisan horizon:publish --no-interaction --no-ansi
+    php artisan storage:link --no-interaction --no-ansi
   }
 
   #
@@ -74,32 +69,48 @@
   # build and install the script executors
   #
   buildScriptExecutors() {
-    for LANG in "php" "node" "lua"; do
-      DOCKER_BUILDKIT=0 php artisan docker-executor-"$LANG":install --no-interaction --no-ansi
+    echo "Building script executors..."
+
+    for LANG in "php" "node"; do
+      DOCKER_BUILDKIT=0 php artisan docker-executor-"$LANG":install --no-interaction --no-ansi &
     done
 
+    wait;
+
     echo "Script executors built!"
+  }
+
+  #
+  # Run the artisan command to seed the database
+  #
+  seedDatabase() {
+    for SEEDER_FILENAME in $(ls "$PM_DIRECTORY/database/seeders" | grep -v "ScriptExecutor"); do
+      SEEDER=$(removeLastString "$SEEDER_FILENAME" ".php")
+      php artisan db:seed --class="$SEEDER" --no-interaction --no-ansi
+    done
   }
 
   #
   # Run the steps necessary to install the app
   #
   installProcessMaker() {
-    php artisan telescope:publish --force --no-interaction --no-ansi
-    php artisan db:wipe --no-interaction --no-ansi
-    php artisan migrate:fresh --no-interaction --no-ansi
+    php artisan telescope:publish --force --no-interaction --no-ansi;
+    php artisan horizon:publish --no-interaction --no-ansi;
+    php artisan db:wipe --no-interaction --no-ansi;
+    php artisan migrate --force --no-interaction --no-ansi;
 
-    for SEEDER_FILENAME in $(ls "$PM_DIRECTORY/database/seeders" | grep -v "ScriptExecutor"); do
-      SEEDER=$(removeLastString "$SEEDER_FILENAME" ".php")
-      php artisan db:seed --class="$SEEDER" --no-interaction --no-ansi
-    done
+    #
+    # Seed the database
+    #
+    seedDatabase;
 
-    php artisan passport:install --no-interaction --no-ansi
+    php artisan package:discover --no-interaction --no-ansi;
+    php artisan passport:install --no-interaction --no-ansi;
 
     #
     # build and install the script executors
     #
-    buildScriptExecutors
+    buildScriptExecutors;
   }
 
   #
@@ -118,7 +129,7 @@
     #
     # Wait for MySQL to come online
     #
-    awaitMysql
+    awaitMysql;
 
     #
     # If we don't find a linked .env file and this is
@@ -127,6 +138,11 @@
     #
     if [ ! -L .env ] && [ -f .env.example ]; then
       #
+      # Put app in maintenance mode
+      #
+      php artisan down
+
+      #
       # setup the environment
       #
       if ! setupEnvironment; then
@@ -134,16 +150,18 @@
       fi
 
       #
-      # Put app in maintenance mode
-      #
-      php artisan down
-
-      #
       # install the app if we're in the web
       # service container
       #
       if ! installProcessMaker; then
         echo "Could not install ProcessMaker" && exit 1
+      fi
+
+      #
+      # Make sure this is defined
+      #
+      if [ -n "$PM_INSTALL_ENTERPRISE_PACKAGES" ]; then
+        PM_INSTALL_ENTERPRISE_PACKAGES=true
       fi
 
       #
@@ -165,8 +183,8 @@
   #
   # Source a few necessary env variables
   #
-  if [ -f /.env.setup ]; then
-    source /.env.setup
+  if [ -f /.docker.env ]; then
+    source /.docker.env
   fi
 
   #

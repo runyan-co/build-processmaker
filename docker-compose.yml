@@ -29,36 +29,23 @@ services:
     build:
       context: .
       target: installer
-      no_cache: true
       args:
-        PHP_VERSION: 8.1
-        NODE_VERSION: 16.18.1
-        GITHUB_OAUTH_TOKEN: ${GITHUB_OAUTH_TOKEN}
-        GITHUB_USERNAME: ${GITHUB_USERNAME}
-        GITHUB_EMAIL: ${GITHUB_EMAIL}
-        PM_COMPOSER_PACKAGES_BUILD_PATH: ${PM_COMPOSER_PACKAGES_BUILD_PATH}
-        PM_INSTALL_ENTERPRISE_PACKAGES: ${PM_INSTALL_ENTERPRISE_PACKAGES}
-        PM_APP_PORT: ${PM_APP_PORT}
-        PM_BROADCASTER_PORT: ${PM_BROADCASTER_PORT}
-        PM_DOCKER_SOCK: ${PM_DOCKER_SOCK}
-        PM_DOMAIN: ${PM_DOMAIN}
-        PM_BRANCH: ${PM_BRANCH}
+        PM_DOCKER_SOCK:
+        PM_BRANCH:
+        GITHUB_EMAIL:
+        GITHUB_USERNAME:
+        GITHUB_OAUTH_TOKEN:
+        PM_INSTALL_ENTERPRISE_PACKAGES:
     networks:
       - pm-v4
     env_file:
       - .env
     environment:
-      - APP_CIPHER
-      - PM_APP_PORT
-      - PM_DOMAIN
       - PM_DOCKER_SOCK
-      - PM_BROADCASTER_PORT
       - PM_BRANCH
-      - PM_INSTALL_ENTERPRISE_PACKAGES
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - storage:/home/pm-v4/storage
-      - public:/home/pm-v4/public
       - composer-packages:/opt/composer-packages
     links:
       - redis
@@ -70,23 +57,21 @@ services:
   web:
     image: pm-v4-web:latest
     restart: always
-    env_file: .env
+    env_file:
+      - .env
+    environment:
+      - PM_DOCKER_SOCK
+      - PM_BRANCH
     build:
       context: .
       target: web
       args:
-        PHP_VERSION: 8.1
-        NODE_VERSION: 16.18.1
-        GITHUB_OAUTH_TOKEN: ${GITHUB_OAUTH_TOKEN}
-        GITHUB_USERNAME: ${GITHUB_USERNAME}
-        GITHUB_EMAIL: ${GITHUB_EMAIL}
-        PM_COMPOSER_PACKAGES_BUILD_PATH: ${PM_COMPOSER_PACKAGES_BUILD_PATH}
-        PM_INSTALL_ENTERPRISE_PACKAGES: ${PM_INSTALL_ENTERPRISE_PACKAGES}
-        PM_APP_PORT: ${PM_APP_PORT}
-        PM_BROADCASTER_PORT: ${PM_BROADCASTER_PORT}
-        PM_DOCKER_SOCK: ${PM_DOCKER_SOCK}
-        PM_DOMAIN: ${PM_DOMAIN}
-        PM_BRANCH: ${PM_BRANCH}
+        PM_DOCKER_SOCK:
+        PM_BRANCH:
+        GITHUB_EMAIL:
+        GITHUB_USERNAME:
+        GITHUB_OAUTH_TOKEN:
+        PM_INSTALL_ENTERPRISE_PACKAGES:
     networks:
       - pm-v4
     ports:
@@ -95,7 +80,6 @@ services:
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - storage:/home/pm-v4/storage
-      - public:/home/pm-v4/public
       - composer-packages:/opt/composer-packages
     links:
       - redis
@@ -107,24 +91,22 @@ services:
       - dd-agent
   queue:
     image: pm-v4-queue:latest
+    restart: always
     build:
       context: .
       target: queue
       args:
-        PHP_VERSION: 8.1
-        NODE_VERSION: 16.18.1
-        GITHUB_OAUTH_TOKEN: ${GITHUB_OAUTH_TOKEN}
-        GITHUB_USERNAME: ${GITHUB_USERNAME}
-        GITHUB_EMAIL: ${GITHUB_EMAIL}
-        PM_COMPOSER_PACKAGES_BUILD_PATH: ${PM_COMPOSER_PACKAGES_BUILD_PATH}
-        PM_INSTALL_ENTERPRISE_PACKAGES: ${PM_INSTALL_ENTERPRISE_PACKAGES}
-        PM_APP_PORT: ${PM_APP_PORT}
-        PM_BROADCASTER_PORT: ${PM_BROADCASTER_PORT}
-        PM_DOCKER_SOCK: ${PM_DOCKER_SOCK}
-        PM_DOMAIN: ${PM_DOMAIN}
-        PM_BRANCH: ${PM_BRANCH}
-    restart: always
-    env_file: .env
+        PM_DOCKER_SOCK:
+        PM_BRANCH:
+        GITHUB_EMAIL:
+        GITHUB_USERNAME:
+        GITHUB_OAUTH_TOKEN:
+        PM_INSTALL_ENTERPRISE_PACKAGES:
+    env_file:
+      - .env
+    environment:
+      - PM_DOCKER_SOCK
+      - PM_BRANCH
     deploy:
       replicas: 2
       mode: replicated
@@ -133,7 +115,6 @@ services:
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - storage:/home/pm-v4/storage
-      - public:/home/pm-v4/public
       - composer-packages:/opt/composer-packages
     links:
       - redis
@@ -163,12 +144,11 @@ services:
       MYSQL_DATABASE: processmaker
       MYSQL_ROOT_PASSWORD: password
     volumes:
-      - db-data:/var/lib/mysql
+      - mysql-data:/var/lib/mysql
 volumes:
-  db-data: {}
-  redis-data: {}
   storage: {}
-  public: {}
+  mysql-data: {}
+  redis-data: {}
   composer-packages: {}
 networks:
   pm-v4: {}
