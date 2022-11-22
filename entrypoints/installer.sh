@@ -14,7 +14,7 @@
   # Installs ProcessMaker enterprise packages
   #
   installEnterprisePackages() {
-    PM_PACKAGES_DOTFILE="$PM_DIRECTORY/storage/framework/.packages"
+    PM_PACKAGES_DOTFILE=storage/framework/.packages
 
     if [ ! -f "$PM_PACKAGES_DOTFILE" ]; then
       for PACKAGE in $(php "$PM_SETUP_PATH/scripts/get-enterprise-package-names.php"); do
@@ -27,7 +27,7 @@
           echo "| ----------------------------------------------------------- |"
           echo "";
 
-          composer require "processmaker/$PACKAGE" --no-ansi --no-interaction;
+          composer require "processmaker/$PACKAGE" --no-ansi --no-plugins --no-interaction;
 
           php artisan "$PACKAGE:install" --no-ansi --no-interaction;
           php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction;
@@ -51,28 +51,30 @@
     #
     # Create and link the .env file
     #
-    ENV_REALPATH="$PM_DIRECTORY/storage/keys/.env"
+    ENV_REALPATH=storage/keys/.env
 
     if [ ! -f "$ENV_REALPATH" ]; then
-      mv .env.example "$ENV_REALPATH"
+      cp "$PM_SETUP_PATH/.env.example" "$ENV_REALPATH"
     fi
 
-    ln -s "$ENV_REALPATH" ./.env
+    if [ ! -L .env ]; then
+      ln -s "$ENV_REALPATH" .env
+    fi
 
     #
     # Make sure these are defined for use in the .env
     #
-    {
-      echo "APP_URL=http://${PM_DOMAIN}:${PM_APP_PORT}"
-      echo "BROADCASTER_HOST=http://${PM_DOMAIN}:${PM_BROADCASTER_PORT}"
-      echo "SESSION_DOMAIN=${PM_DOMAIN}"
-      echo "HOME=${PM_DIRECTORY}"
-      echo "NODE_BIN_PATH=$(which node)"
-      echo "PROCESSMAKER_SCRIPTS_DOCKER=$(which docker)"
-      echo "PROCESSMAKER_SCRIPTS_HOME=${PM_DIRECTORY}/storage/app/scripts"
-    } >>"$ENV_REALPATH"
-
-    php artisan key:generate --no-interaction --no-ansi
+    if ! grep "APP_URL=http://${PM_DOMAIN}:${PM_APP_PORT}" < .env >/dev/null 2>&1; then
+      {
+        echo "APP_URL=http://${PM_DOMAIN}:${PM_APP_PORT}"
+        echo "BROADCASTER_HOST=http://${PM_DOMAIN}:${PM_BROADCASTER_PORT}"
+        echo "SESSION_DOMAIN=${PM_DOMAIN}"
+        echo "HOME=${PM_DIRECTORY}"
+        echo "NODE_BIN_PATH=$(which node)"
+        echo "PROCESSMAKER_SCRIPTS_DOCKER=$(which docker)"
+        echo "PROCESSMAKER_SCRIPTS_HOME=${PM_DIRECTORY}/storage/app/scripts"
+      } >>"$ENV_REALPATH"
+    fi
   }
 
   #
@@ -83,21 +85,69 @@
   }
 
   #
-  # build and install the script executors
+  # Copy laravel echo server config
   #
-  buildScriptExecutors() {
-    echo "Building script executors..."
+  copyEchoServerConfig() {
+    cp "$PM_SETUP_PATH/laravel-echo-server.json" .
+  }
 
-    php artisan docker-executor-node:install --no-interaction --no-ansi;
-    php artisan docker-executor-php:install --no-interaction --no-ansi;
+  #
+  # Move the composer file to storage, then link it
+  #
+  linkComposerFile() {
+    if [ ! -L composer.json ]; then
+      mv composer.json storage/framework
+      ln -s storage/framework/composer.json .
+    fi
+  }
 
-    echo "Script executors built!"
+  #
+  # Install app's composer dependencies
+  #
+  installComposerDeps() {
+    composer install \
+      --no-progress \
+      --optimize-autoloader \
+      --no-scripts \
+      --no-plugins \
+      --no-ansi \
+      --no-interaction
+
+    composer clear-cache --no-ansi --no-interaction
+  }
+
+  #
+  # Install app's npm dependencies
+  #
+  installNpmDeps() {
+    npm clean-install --no-audit
+    npm run dev --no-progress
+    npm cache clear --force
   }
 
   #
   # Run the steps necessary to install the app
   #
   installApplication() {
+    #
+    # Setup configuration files
+    #
+    linkComposerFile
+    copyEchoServerConfig
+
+    #
+    # Install deps in parallel
+    #
+    installComposerDeps &
+    installNpmDeps &
+
+    #
+    # Wait for the deps to finish installing
+    # and for the assets to be compiled
+    #
+    wait;
+
+    php artisan key:generate --no-interaction --no-ansi
     php artisan package:discover --no-interaction --no-ansi
     php artisan horizon:publish --no-interaction --no-ansi
     php artisan telescope:publish --force --no-interaction --no-ansi
@@ -126,11 +176,6 @@
     # Wait for MySQL to come online
     #
     awaitMysql
-
-    #
-    # Put app in maintenance mode
-    #
-    php artisan down --no-interaction --no-ansi
 
     #
     # setup the environment
@@ -168,29 +213,28 @@
     #
     php artisan up --no-interaction --no-ansi
     php artisan horizon:terminate --no-interaction --no-ansi
+
+    #
+    # Mark as installed
+    #
+    touch storage/framework/.installed
   }
 
   #
   # Source a few necessary env variables
   #
-  sourceDockerEnv;
+  sourceDockerEnv
 
   #
   # If we don't find a linked .env file and this is
   # a web service, then we need to run the
   # app's artisan install command
   #
-  if [ ! -L .env ] && [ -f .env.example ]; then
-    installProcessMaker;
-  fi
-
-  #
-  # Check for any user-passed arguments to the container
-  # and if none are found, we can gracefully exit
-  #
-  if [ $# -gt 0 ]; then
-    exec "$@";
-  else
-    exit 0;
+  if [ ! -f storage/framework/.installed ]; then
+    if ! installProcessMaker | tee -a storage/framework/.install; then
+      rm storage/framework/.install
+      echo "Install failed"
+      exit 1
+    fi
   fi
 }

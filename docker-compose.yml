@@ -25,31 +25,44 @@ services:
       - DD_LOGS_ENABLED
       - DD_CONTAINER_ENV_AS_TAGS
   installer:
-    image: pm-v4-installer:latest
-    entrypoint: "/usr/local/bin/installer-entrypoint"
+    image: processmaker:${PM_BRANCH}
     restart: "no"
+    entrypoint: "/usr/local/bin/installer-entrypoint"
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+      - 2606:4700:4700::1111
+      - 2606:4700:4700::1001
+      - 0.0.0.0
     build:
       context: .
-      target: installer
       args:
         PM_DOCKER_SOCK:
         PM_BRANCH:
         GITHUB_EMAIL:
         GITHUB_USERNAME:
         GITHUB_OAUTH_TOKEN:
-        PM_INSTALL_ENTERPRISE_PACKAGES:
     networks:
       - pm-v4
     env_file:
       - .env
     volumes:
-      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
-      - storage:/var/www/html/storage
-      - bootstrap-cache:/var/www/html/bootstrap/cache
-      - resources:/var/www/html/resources
-      - public:/var/www/html/public
-      - config:/var/www/html/config
+      - type: bind
+        source: ${PM_APP_SOURCE}
+        target: /var/www/html
+        consistency: consistent
+      - type: bind
+        source: ${PM_DOCKER_SOCK}
+        target: /var/run/docker.sock
+        consistency: consistent
+      - type: bind
+        source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
+        target: /opt/packages
+        consistency: consistent
+      - logs:/var/www/html/storage/logs
+      - compiled:/var/www/html/bootstrap/cache
+      - node-modules:/var/www/html/node_modules
+      - composer-vendor:/var/www/html/vendor
     links:
       - redis
       - mysql
@@ -58,18 +71,23 @@ services:
       - redis
       - dd-agent
   web:
-    image: pm-v4-web:latest
+    image: processmaker:${PM_BRANCH}
     restart: always
-    entrypoint: "/usr/local/bin/web-entrypoint"
+    entrypoint: ["/usr/local/bin/web-entrypoint"]
     healthcheck:
-      test: "curl -f "http://${PM_DOMAIN}/ping" || exit 1"
+      test: "curl -f \"http://${PM_DOMAIN}/ping\" || exit 1"
       interval: 5s
       timeout: 3s
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+      - 2606:4700:4700::1111
+      - 2606:4700:4700::1001
+      - 0.0.0.0
     env_file:
       - .env
     build:
       context: .
-      target: web
       args:
         PM_DOCKER_SOCK:
         PM_BRANCH:
@@ -83,13 +101,22 @@ services:
       - ${PM_APP_PORT}:80
       - ${PM_BROADCASTER_PORT}:6001
     volumes:
-      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
-      - storage:/var/www/html/storage
-      - bootstrap-cache:/var/www/html/bootstrap/cache
-      - resources:/var/www/html/resources
-      - public:/var/www/html/public
-      - config:/var/www/html/config
+      - type: bind
+        source: ${PM_APP_SOURCE}
+        target: /var/www/html
+        consistency: consistent
+      - type: bind
+        source: ${PM_DOCKER_SOCK}
+        target: /var/run/docker.sock
+        consistency: consistent
+      - type: bind
+        source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
+        target: /opt/packages
+        consistency: consistent
+      - logs:/var/www/html/storage/logs
+      - compiled:/var/www/html/bootstrap/cache
+      - node-modules:/var/www/html/node_modules
+      - composer-vendor:/var/www/html/vendor
     links:
       - redis
       - mysql
@@ -99,9 +126,15 @@ services:
       - installer
       - dd-agent
   queue:
-    image: pm-v4-queue:latest
+    image: processmaker:${PM_BRANCH}
     restart: always
-    entrypoint: "/usr/local/bin/queue-entrypoint"
+    entrypoint: ["/usr/local/bin/queue-entrypoint"]
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+      - 2606:4700:4700::1111
+      - 2606:4700:4700::1001
+      - 0.0.0.0
     healthcheck:
       test: "php artisan horizon:status || exit 1"
       interval: 5s
@@ -111,26 +144,33 @@ services:
       replicas: 2
     build:
       context: .
-      target: queue
       args:
         PM_DOCKER_SOCK:
         PM_BRANCH:
         GITHUB_EMAIL:
         GITHUB_USERNAME:
         GITHUB_OAUTH_TOKEN:
-        PM_INSTALL_ENTERPRISE_PACKAGES:
     env_file:
       - .env
     networks:
       - pm-v4
     volumes:
-      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
-      - storage:/var/www/html/storage
-      - bootstrap-cache:/var/www/html/bootstrap/cache
-      - resources:/var/www/html/resources
-      - public:/var/www/html/public
-      - config:/var/www/html/config
+      - type: bind
+        source: ${PM_APP_SOURCE}
+        target: /var/www/html
+        consistency: consistent
+      - type: bind
+        source: ${PM_DOCKER_SOCK}
+        target: /var/run/docker.sock
+        consistency: consistent
+      - type: bind
+        source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
+        target: /opt/packages
+        consistency: consistent
+      - logs:/var/www/html/storage/logs
+      - compiled:/var/www/html/bootstrap/cache
+      - node-modules:/var/www/html/node_modules
+      - composer-vendor:/var/www/html/vendor
     links:
       - redis
       - mysql
@@ -161,12 +201,11 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
 volumes:
-  config: {}
-  resources: {}
-  public: {}
-  storage: {}
-  bootstrap-cache: {}
   mysql-data: {}
   redis-data: {}
+  composer-vendor: {}
+  node-modules: {}
+  compiled: {}
+  logs: {}
 networks:
   pm-v4: {}

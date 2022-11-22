@@ -2,33 +2,45 @@
 
 {
   #
-  # Check for the app .env and link it
-  # when found, otherwise bail
+  # Base app files/env setup
   #
   setupEnv() {
-    if [ ! -f "$PM_DIRECTORY/storage/keys/.env" ]; then
+    if [ ! -d storage/keys ]; then
+      mkdir -p storage/keys;
+    fi
+
+    #
+    # Check for the app .env and link it
+    # when found, otherwise bail
+    #
+    if [ ! -f storage/keys/.env ]; then
       echo "Queue .env file not found (env not ready)..." && sleep 1 && exit 0
-    elif [ ! -f "$PM_DIRECTORY/.env" ]; then
-      ln -s "$PM_DIRECTORY/storage/keys/.env" .env
+    elif [ ! -f .env ]; then
+      ln -s storage/keys/.env .env
+    fi
+
+    #
+    # Check for the app composer.json
+    # and link it if it's not already,
+    # and if we don't find it, bail
+    #
+    if [ ! -f storage/framework/composer.json ]; then
+      echo "Composer file not found (env not ready)..." && sleep 1 && exit 0
+    fi
+
+    if [ ! -L composer.json ]; then
+      ln -s storage/framework/composer.json .
     fi
   }
-
-  #
-  # Install composer dependencies only if
-  # composer.json changes
-  #
-#  installComposerDepsIfNecessary() {
-#    if [ "$(php "$PM_SETUP_PATH/scripts/generate-composer-hash.php")" = 1 ]; then
-#      composer update -o --no-ansi --no-interaction
-#    fi
-#  }
 
   #
   # If the app is in maintenance mode, bail
   #
   checkForMaintenanceMode() {
-    if [ -f "$PM_DIRECTORY/storage/framework/maintenance.php" ]; then
-      echo "ProcessMaker in maintenance mode..." && sleep 1 && exit 0
+    if [ -f storage/framework/maintenance.php ]; then
+      echo "ProcessMaker in maintenance mode..." && sleep 3 && exit 0
+    elif [ ! -f storage/framework/.installed ]; then
+      echo "ProcessMaker installation not complete.." && sleep 3 && exit 0
     fi
   }
 
@@ -54,6 +66,6 @@
   if [ $# -gt 0 ]; then
     exec "$@"
   else
-    bash -c '"$PHP_BINARY" "$PM_DIRECTORY/artisan" horizon --no-interaction --no-ansi'
+    bash -c '"$PHP_BINARY" "artisan" horizon --no-interaction --no-ansi'
   fi
 }

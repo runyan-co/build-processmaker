@@ -2,17 +2,21 @@
   "config": {
     "allow-plugins": true
   },
-  "repositories": [
-    {
+  "repositories": {
+    "packagist": {
+      "type": "composer",
+      "url": "https://repo.packagist.org"
+    },
+    "0": {
       "type": "vcs",
       "url": "https://github.com/ProcessMaker/SocialiteProviders"
     },
-    {
+    "1": {
       "type": "path",
       "url": "/opt/packages/*",
       "options": {
         "symlink": true
       }
     }
-  ]
+  }
 }
