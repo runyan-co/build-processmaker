@@ -4,6 +4,8 @@ services:
     restart: on-failure
     pid: host
     cgroup_parent: host
+    deploy:
+      mode: global
     env_file:
       - .env
     networks:
@@ -26,6 +28,9 @@ services:
       - DD_CONTAINER_ENV_AS_TAGS
   installer:
     image: pm-v4-installer:latest
+    restart: "no"
+    deploy:
+      mode: global
     build:
       context: .
       target: installer
@@ -40,13 +45,14 @@ services:
       - pm-v4
     env_file:
       - .env
-    environment:
-      - PM_DOCKER_SOCK
-      - PM_BRANCH
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - storage:/home/pm-v4/storage
-      - composer-packages:/opt/composer-packages
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
+      - storage:/var/www/html/storage
+      - bootstrap-cache:/var/www/html/bootstrap
+      - resources:/var/www/html/resources
+      - public:/var/www/html/public
+      - config:/var/www/html/config
     links:
       - redis
       - mysql
@@ -59,9 +65,9 @@ services:
     restart: always
     env_file:
       - .env
-    environment:
-      - PM_DOCKER_SOCK
-      - PM_BRANCH
+    deploy:
+      mode: replicated
+      replicas: 1
     build:
       context: .
       target: web
@@ -79,8 +85,12 @@ services:
       - ${PM_BROADCASTER_PORT}:6001
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - storage:/home/pm-v4/storage
-      - composer-packages:/opt/composer-packages
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
+      - storage:/var/www/html/storage
+      - bootstrap-cache:/var/www/html/bootstrap
+      - resources:/var/www/html/resources
+      - public:/var/www/html/public
+      - config:/var/www/html/config
     links:
       - redis
       - mysql
@@ -92,6 +102,9 @@ services:
   queue:
     image: pm-v4-queue:latest
     restart: always
+    deploy:
+      mode: replicated
+      replicas: 2
     build:
       context: .
       target: queue
@@ -104,18 +117,16 @@ services:
         PM_INSTALL_ENTERPRISE_PACKAGES:
     env_file:
       - .env
-    environment:
-      - PM_DOCKER_SOCK
-      - PM_BRANCH
-    deploy:
-      replicas: 2
-      mode: replicated
     networks:
       - pm-v4
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - storage:/home/pm-v4/storage
-      - composer-packages:/opt/composer-packages
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
+      - storage:/var/www/html/storage
+      - bootstrap-cache:/var/www/html/bootstrap
+      - resources:/var/www/html/resources
+      - public:/var/www/html/public
+      - config:/var/www/html/config
     links:
       - redis
       - mysql
@@ -127,6 +138,8 @@ services:
   redis:
     image: redis:7
     restart: on-failure
+    deploy:
+      mode: global
     depends_on:
       - dd-agent
     networks:
@@ -136,6 +149,8 @@ services:
   mysql:
     image: mysql:8
     restart: on-failure
+    deploy:
+      mode: global
     depends_on:
       - dd-agent
     networks:
@@ -146,9 +161,12 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
 volumes:
+  config: {}
+  resources: {}
+  public: {}
   storage: {}
+  bootstrap-cache: {}
   mysql-data: {}
   redis-data: {}
-  composer-packages: {}
 networks:
   pm-v4: {}

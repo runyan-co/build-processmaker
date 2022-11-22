@@ -9,7 +9,7 @@
     },
     {
       "type": "path",
-      "url": "/opt/composer-packages/*",
+      "url": "/opt/packages/*",
       "options": {
         "symlink": true
       }
