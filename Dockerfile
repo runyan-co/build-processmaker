@@ -128,7 +128,6 @@ COPY ./stubs/.env.example .
 RUN mv composer.json "$PM_DIRECTORY/storage" && \
     ln -s "$PM_DIRECTORY/storage/composer.json" . && \
     composer install  \
-        --profile \
         --no-progress  \
         --optimize-autoloader \
         --no-ansi  \
@@ -213,27 +212,10 @@ RUN rm -f "$PM_ENV" && \
     } >"$PM_ENV"
 
 WORKDIR $PM_DIRECTORY
-
 #
-# Installer-type build
+# All-purpose Build
 #
-FROM packages AS installer
-
-#
-# container entrypoint
-#
-COPY ./entrypoints/installer.sh /usr/local/bin/entrypoint
-RUN chmod +x /usr/local/bin/entrypoint
-
-#
-# entrypoint
-#
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
-
-#
-# Web-service Build
-#
-FROM packages AS web
+FROM packages AS all-purpose
 
 #
 # php-fpm limit defaults (these get written at entrypoint startup)
@@ -300,34 +282,14 @@ COPY stubs/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY stubs/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 #
-# container entrypoint
+# container entrypoints
 #
-COPY ./entrypoints/web.sh /usr/local/bin/entrypoint
-RUN chmod +x /usr/local/bin/entrypoint
+COPY ./entrypoints/web.sh /usr/local/bin/web-entrypoint
+COPY ./entrypoints/queue.sh /usr/local/bin/queue-entrypoint
+COPY ./entrypoints/installer.sh /usr/local/bin/installer-entrypoint
 
-#
-# Healthcheck setup
-#
-HEALTHCHECK --interval=5s --timeout=3s \
-  CMD curl -f "http://$PM_DOMAIN/ping" || exit 1
+RUN chmod +x /usr/local/bin/web-entrypoint && \
+    chmod +x /usr/local/bin/queue-entrypoint && \
+    chmod +x /usr/local/bin/installer-entrypoint
 
-#
-# entrypoint
-#
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
-
-#
-# Queue-type build
-#
-FROM packages AS queue
-
-#
-# container entrypoint
-#
-COPY ./entrypoints/queue.sh /usr/local/bin/entrypoint
-RUN chmod +x /usr/local/bin/entrypoint
-
-#
-# entrypoint
-#
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
+ENTRYPOINT ["/bin/bash"]

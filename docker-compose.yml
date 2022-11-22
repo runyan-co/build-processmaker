@@ -4,8 +4,6 @@ services:
     restart: on-failure
     pid: host
     cgroup_parent: host
-    deploy:
-      mode: global
     env_file:
       - .env
     networks:
@@ -28,9 +26,8 @@ services:
       - DD_CONTAINER_ENV_AS_TAGS
   installer:
     image: pm-v4-installer:latest
+    entrypoint: "/usr/local/bin/installer-entrypoint"
     restart: "no"
-    deploy:
-      mode: global
     build:
       context: .
       target: installer
@@ -49,7 +46,7 @@ services:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
       - storage:/var/www/html/storage
-      - bootstrap-cache:/var/www/html/bootstrap
+      - bootstrap-cache:/var/www/html/bootstrap/cache
       - resources:/var/www/html/resources
       - public:/var/www/html/public
       - config:/var/www/html/config
@@ -63,11 +60,13 @@ services:
   web:
     image: pm-v4-web:latest
     restart: always
+    entrypoint: "/usr/local/bin/web-entrypoint"
+    healthcheck:
+      test: "curl -f "http://${PM_DOMAIN}/ping" || exit 1"
+      interval: 5s
+      timeout: 3s
     env_file:
       - .env
-    deploy:
-      mode: replicated
-      replicas: 1
     build:
       context: .
       target: web
@@ -87,7 +86,7 @@ services:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
       - storage:/var/www/html/storage
-      - bootstrap-cache:/var/www/html/bootstrap
+      - bootstrap-cache:/var/www/html/bootstrap/cache
       - resources:/var/www/html/resources
       - public:/var/www/html/public
       - config:/var/www/html/config
@@ -102,6 +101,11 @@ services:
   queue:
     image: pm-v4-queue:latest
     restart: always
+    entrypoint: "/usr/local/bin/queue-entrypoint"
+    healthcheck:
+      test: "php artisan horizon:status || exit 1"
+      interval: 5s
+      timeout: 3s
     deploy:
       mode: replicated
       replicas: 2
@@ -123,7 +127,7 @@ services:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
       - storage:/var/www/html/storage
-      - bootstrap-cache:/var/www/html/bootstrap
+      - bootstrap-cache:/var/www/html/bootstrap/cache
       - resources:/var/www/html/resources
       - public:/var/www/html/public
       - config:/var/www/html/config
@@ -138,8 +142,6 @@ services:
   redis:
     image: redis:7
     restart: on-failure
-    deploy:
-      mode: global
     depends_on:
       - dd-agent
     networks:
@@ -149,8 +151,6 @@ services:
   mysql:
     image: mysql:8
     restart: on-failure
-    deploy:
-      mode: global
     depends_on:
       - dd-agent
     networks:

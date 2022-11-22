@@ -19,7 +19,7 @@
   #
 #  installComposerDepsIfNecessary() {
 #    if [ "$(php "$PM_SETUP_PATH/scripts/generate-composer-hash.php")" = 1 ]; then
-#      composer update -o --no-ansi --profile --no-interaction
+#      composer update -o --no-ansi --no-interaction
 #    fi
 #  }
 
@@ -45,7 +45,7 @@
   #
   # 2. Check if composer.json has changed and install if needed
   #
-  composer update -o --no-ansi --profile --no-interaction
+  composer update -o --no-ansi --no-interaction
 
   #
   # 4. Run the entrypoint command and execute any user-passed

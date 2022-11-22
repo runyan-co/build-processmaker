@@ -27,7 +27,7 @@
           echo "| ----------------------------------------------------------- |"
           echo "";
 
-          composer require "processmaker/$PACKAGE" --profile --no-ansi --no-interaction;
+          composer require "processmaker/$PACKAGE" --no-ansi --no-interaction;
 
           php artisan "$PACKAGE:install" --no-ansi --no-interaction;
           php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction;
@@ -88,10 +88,9 @@
   buildScriptExecutors() {
     echo "Building script executors..."
 
-    php artisan docker-executor-node:install --no-interaction --no-ansi &
-    php artisan docker-executor-php:install --no-interaction --no-ansi &
+    php artisan docker-executor-node:install --no-interaction --no-ansi;
+    php artisan docker-executor-php:install --no-interaction --no-ansi;
 
-    wait
     echo "Script executors built!"
   }
 
