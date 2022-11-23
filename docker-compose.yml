@@ -25,7 +25,7 @@ services:
       - DD_LOGS_ENABLED
       - DD_CONTAINER_ENV_AS_TAGS
   installer:
-    image: processmaker:${PM_BRANCH}
+    image: processmaker:${PM_IMAGE_NAME}
     restart: "no"
     entrypoint: ["/usr/local/bin/installer-entrypoint"]
     extra_hosts:
@@ -82,7 +82,7 @@ services:
       - redis
       - dd-agent
   web:
-    image: processmaker:${PM_BRANCH}
+    image: processmaker:${PM_IMAGE_NAME}
     restart: always
     entrypoint: ["/usr/local/bin/web-entrypoint"]
     healthcheck:
@@ -147,7 +147,7 @@ services:
       - installer
       - dd-agent
   queue:
-    image: processmaker:${PM_BRANCH}
+    image: processmaker:${PM_IMAGE_NAME}
     restart: always
     entrypoint: ["/usr/local/bin/queue-entrypoint"]
     extra_hosts:
