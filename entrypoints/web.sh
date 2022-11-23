@@ -9,18 +9,10 @@
     # Check for the app .env and link it
     # when found, otherwise bail
     #
-    if [ ! -d storage/keys ]; then
-      mkdir -p storage/keys;
-    fi
-
-    #
-    # Check for the app .env and link it
-    # when found, otherwise bail
-    #
-    if [ ! -f storage/keys/.env ]; then
+    if [ ! -f storage/build/.env ]; then
       echo "App env file not found (env not ready)..." && sleep 1 && exit 0
-    elif [ ! -f .env ]; then
-      ln -s storage/keys/.env .env
+    elif [ ! -L .env ]; then
+      ln -s storage/build/.env .env
     fi
 
     #
@@ -29,11 +21,17 @@
     # and if we don't find it, bail
     #
     if [ ! -f storage/build/composer.json ] || [ ! -f storage/build/composer.lock ]; then
-      echo "Composer file(s) not found (app not ready)..." && sleep 1 && exit 0
+      echo "Composer file(s) not found (app not ready)..."
+      sleep 1
+      exit 0
     fi
 
     if [ ! -L composer.json ]; then
       ln -s storage/build/composer.json .
+    fi
+
+    if [ ! -L composer.lock ]; then
+      ln -s storage/build/composer.lock .
     fi
   }
 
@@ -41,10 +39,14 @@
   # If the app is in maintenance mode, bail
   #
   checkForMaintenanceMode() {
-    if [ -f storage/build/maintenance.php ]; then
-      echo "ProcessMaker in maintenance mode..." && sleep 3 && exit 0
+    if [ -f storage/framework/maintenance.php ]; then
+      echo "ProcessMaker in maintenance mode..."
+      sleep 3
+      exit 0
     elif [ ! -f storage/build/.installed ]; then
-      echo "ProcessMaker installation not complete.." && sleep 3 && exit 0
+      echo "ProcessMaker installation not complete.."
+      sleep 3
+      exit 0
     fi
   }
 

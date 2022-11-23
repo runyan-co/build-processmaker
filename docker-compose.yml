@@ -64,13 +64,16 @@ services:
         source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
         target: /opt/packages
         consistency: delegated
+      - type: volume
+        source: build
+        target: ${PM_DIRECTORY}/storage/build
+        consistency: consistent
       - logs:${PM_DIRECTORY}/storage/logs
       - compiled-classes:${PM_DIRECTORY}/bootstrap/cache
       - compiled-views:${PM_DIRECTORY}/storage/framework/views
       - compiled-facades:${PM_DIRECTORY}/storage/framework/cache
       - node-modules:${PM_DIRECTORY}/node_modules
       - composer-vendor:${PM_DIRECTORY}/vendor
-      - build:${PM_DIRECTORY}/storage/build
     links:
       - redis
       - mysql
@@ -125,13 +128,16 @@ services:
         source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
         target: /opt/packages
         consistency: delegated
+      - type: volume
+        source: build
+        target: ${PM_DIRECTORY}/storage/build
+        consistency: consistent
       - logs:${PM_DIRECTORY}/storage/logs
       - compiled-classes:${PM_DIRECTORY}/bootstrap/cache
       - compiled-views:${PM_DIRECTORY}/storage/framework/views
       - compiled-facades:${PM_DIRECTORY}/storage/framework/cache
       - node-modules:${PM_DIRECTORY}/node_modules
       - composer-vendor:${PM_DIRECTORY}/vendor
-      - build:${PM_DIRECTORY}/storage/build
     links:
       - redis
       - mysql
@@ -158,11 +164,7 @@ services:
       timeout: 3s
     deploy:
       mode: replicated
-      replicas: 4
-      resources:
-        limits:
-          memory: 0.5gb
-          cpus: '0.75'
+      replicas: 2
     build:
       context: .
       args:
@@ -191,13 +193,16 @@ services:
         source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
         target: /opt/packages
         consistency: delegated
+      - type: volume
+        source: build
+        target: ${PM_DIRECTORY}/storage/build
+        consistency: consistent
       - logs:${PM_DIRECTORY}/storage/logs
       - compiled-classes:${PM_DIRECTORY}/bootstrap/cache
       - compiled-views:${PM_DIRECTORY}/storage/framework/views
       - compiled-facades:${PM_DIRECTORY}/storage/framework/cache
       - node-modules:${PM_DIRECTORY}/node_modules
       - composer-vendor:${PM_DIRECTORY}/vendor
-      - build:${PM_DIRECTORY}/storage/build
     links:
       - redis
       - mysql
@@ -209,6 +214,10 @@ services:
   redis:
     image: redis:7
     restart: on-failure
+    healthcheck:
+      test: redis-cli ping --host=0.0.0.0
+      interval: 5s
+      timeout: 5s
     depends_on:
       - dd-agent
     networks:
@@ -218,6 +227,10 @@ services:
   mysql:
     image: mysql:8
     restart: on-failure
+    healthcheck:
+      test: mysqladmin ping -uroot -ppassword -h 0.0.0.0
+      interval: 10s
+      timeout: 5s
     depends_on:
       - dd-agent
     networks:

@@ -47,8 +47,6 @@
       done
 
       composer dumpautoload -o --no-ansi --no-interaction
-      php artisan upgrade --no-ansi --no-interaction
-
       echo "Enterprise packages installed!"
 
     else
@@ -67,10 +65,8 @@
 
     if [ ! -f "$ENV_REALPATH" ]; then
       cp "$PM_SETUP_PATH/.env.example" "$ENV_REALPATH"
-    fi
-
-    if [ ! -L .env ]; then
-      ln -s "$ENV_REALPATH" .env
+    elif [ ! -L .env ]; then
+      ln -s "$ENV_REALPATH" .
     fi
 
     #
@@ -106,18 +102,17 @@
   #
   # Move composer files to storage, then link it
   #
-  linkComposerFile() {
-    if [ ! -L composer.json ]; then
-      rm storage/build/composer.json
-      mv composer.json storage/build
-      ln -s storage/build/composer.json .
-    fi
+  linkComposerFiles() {
+    for FILE in "composer.json" "composer.lock"; do
+      if [ ! -L "$FILE" ]; then
+        if [ -f "storage/build/$FILE" ]; then
+          rm -rf "storage/build/$FILE"
+        fi
 
-    if [ ! -L composer.json ]; then
-      rm storage/build/composer.lock
-      mv composer.lock storage/build
-      ln -s storage/build/composer.lock .
-    fi
+        mv "$FILE" storage/build
+        ln -s "storage/build/$FILE" .
+      fi
+    done;
   }
 
   #
@@ -156,7 +151,7 @@
     #
     # Setup configuration files
     #
-    linkComposerFile
+    linkComposerFiles
     copyEchoServerConfig
 
     #
@@ -254,11 +249,12 @@
   # app's artisan install command
   #
   if [ ! -f storage/build/.installed ]; then
-    INSTALL_LOG=storage/build/install.log
-    touch "$INSTALL_LOG"
+    echo "" > storage/build/install.log
 
-    if ! installProcessMaker | tee -a "$INSTALL_LOG"; then
-      echo "Install failed. See storage/build/.install for details." && exit 1
+    if ! installProcessMaker | tee -a storage/build/install.log; then
+      echo "Install failed. See storage/build/install.log for details." && exit 1
     fi
   fi
+
+  exec "$@"
 }
