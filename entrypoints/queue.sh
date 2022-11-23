@@ -14,7 +14,7 @@
     # when found, otherwise bail
     #
     if [ ! -f storage/keys/.env ]; then
-      echo "Queue .env file not found (env not ready)..." && sleep 1 && exit 0
+      echo "App env file not found (env not ready)..." && sleep 1 && exit 0
     elif [ ! -f .env ]; then
       ln -s storage/keys/.env .env
     fi
@@ -24,12 +24,12 @@
     # and link it if it's not already,
     # and if we don't find it, bail
     #
-    if [ ! -f storage/framework/composer.json ]; then
-      echo "Composer file not found (env not ready)..." && sleep 1 && exit 0
+    if [ ! -f storage/build/composer.json ] || [ ! -f storage/build/composer.lock ]; then
+      echo "Composer file(s) not found (app not ready)..." && sleep 1 && exit 0
     fi
 
     if [ ! -L composer.json ]; then
-      ln -s storage/framework/composer.json .
+      ln -s storage/build/composer.json .
     fi
   }
 
@@ -37,9 +37,9 @@
   # If the app is in maintenance mode, bail
   #
   checkForMaintenanceMode() {
-    if [ -f storage/framework/maintenance.php ]; then
+    if [ -f storage/build/maintenance.php ]; then
       echo "ProcessMaker in maintenance mode..." && sleep 3 && exit 0
-    elif [ ! -f storage/framework/.installed ]; then
+    elif [ ! -f storage/build/.installed ]; then
       echo "ProcessMaker installation not complete.." && sleep 3 && exit 0
     fi
   }
@@ -55,17 +55,7 @@
   checkForMaintenanceMode
 
   #
-  # 3. Check if composer.json has changed and install if needed
+  # 3. Run the entrypoint command
   #
-  composer update -o --no-ansi --no-interaction
-
-  #
-  # 4. Run the entrypoint command and execute any user-passed
-  #    arguments if found
-  #
-  if [ $# -gt 0 ]; then
-    exec "$@"
-  else
-    bash -c '"$PHP_BINARY" "artisan" horizon --no-interaction --no-ansi'
-  fi
+  bash -c '"$PHP_BINARY" "artisan" horizon --no-interaction --no-ansi'
 }

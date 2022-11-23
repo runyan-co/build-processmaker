@@ -11,23 +11,33 @@
   }
 
   #
+  # Change to desired processmaker/processmaker version
+  #
+  switchProcessMakerVersion() {
+    git restore .
+    git clean -d -f
+    git fetch origin "$PM_BRANCH"
+    git checkout "$PM_BRANCH"
+  }
+
+  #
   # Installs ProcessMaker enterprise packages
   #
   installEnterprisePackages() {
-    PM_PACKAGES_DOTFILE=storage/framework/.packages
+    PM_PACKAGES_DOTFILE=storage/build/.packages
 
     if [ ! -f "$PM_PACKAGES_DOTFILE" ]; then
       for PACKAGE in $(php "$PM_SETUP_PATH/scripts/get-enterprise-package-names.php"); do
         {
           echo "";
-          echo "| ----------------------------------------------------------- |"
-          echo "|                                                             |"
-          echo "| Installing processmaker/$PACKAGE";
-          echo "|                                                             |"
-          echo "| ----------------------------------------------------------- |"
+          echo "+----------------------------------------------------------"
+          echo "|"
+          echo "|    Installing processmaker/$PACKAGE";
+          echo "|"
+          echo "+----------------------------------------------------------"
           echo "";
 
-          composer require "processmaker/$PACKAGE" --no-ansi --no-plugins --no-interaction;
+          composer require "processmaker/$PACKAGE" --quiet --no-ansi --no-plugins --no-interaction;
 
           php artisan "$PACKAGE:install" --no-ansi --no-interaction;
           php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction;
@@ -36,7 +46,9 @@
         }
       done
 
-      composer dumpautoload -o --no-ansi --no-interaction --profile
+      composer dumpautoload -o --no-ansi --no-interaction
+      php artisan upgrade --no-ansi --no-interaction
+
       echo "Enterprise packages installed!"
 
     else
@@ -51,7 +63,7 @@
     #
     # Create and link the .env file
     #
-    ENV_REALPATH=storage/keys/.env
+    ENV_REALPATH=storage/build/.env
 
     if [ ! -f "$ENV_REALPATH" ]; then
       cp "$PM_SETUP_PATH/.env.example" "$ENV_REALPATH"
@@ -64,7 +76,7 @@
     #
     # Make sure these are defined for use in the .env
     #
-    if ! grep "APP_URL=http://${PM_DOMAIN}:${PM_APP_PORT}" < .env >/dev/null 2>&1; then
+    if ! grep "APP_URL=http://${PM_DOMAIN}:${PM_APP_PORT}" < .env; then
       {
         echo "APP_URL=http://${PM_DOMAIN}:${PM_APP_PORT}"
         echo "BROADCASTER_HOST=http://${PM_DOMAIN}:${PM_BROADCASTER_PORT}"
@@ -92,12 +104,19 @@
   }
 
   #
-  # Move the composer file to storage, then link it
+  # Move composer files to storage, then link it
   #
   linkComposerFile() {
     if [ ! -L composer.json ]; then
-      mv composer.json storage/framework
-      ln -s storage/framework/composer.json .
+      rm storage/build/composer.json
+      mv composer.json storage/build
+      ln -s storage/build/composer.json .
+    fi
+
+    if [ ! -L composer.json ]; then
+      rm storage/build/composer.lock
+      mv composer.lock storage/build
+      ln -s storage/build/composer.lock .
     fi
   }
 
@@ -129,6 +148,11 @@
   # Run the steps necessary to install the app
   #
   installApplication() {
+    #
+    # Cleanup
+    #
+    switchProcessMakerVersion
+
     #
     # Setup configuration files
     #
@@ -211,13 +235,12 @@
     #
     # Bring the app back up
     #
-    php artisan up --no-interaction --no-ansi
     php artisan horizon:terminate --no-interaction --no-ansi
 
     #
     # Mark as installed
     #
-    touch storage/framework/.installed
+    touch storage/build/.installed
   }
 
   #
@@ -230,11 +253,12 @@
   # a web service, then we need to run the
   # app's artisan install command
   #
-  if [ ! -f storage/framework/.installed ]; then
-    if ! installProcessMaker | tee -a storage/framework/.install; then
-      rm storage/framework/.install
-      echo "Install failed"
-      exit 1
+  if [ ! -f storage/build/.installed ]; then
+    INSTALL_LOG=storage/build/install.log
+    touch "$INSTALL_LOG"
+
+    if ! installProcessMaker | tee -a "$INSTALL_LOG"; then
+      echo "Install failed. See storage/build/.install for details." && exit 1
     fi
   fi
 }

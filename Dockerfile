@@ -11,8 +11,12 @@ WORKDIR /tmp
 #
 # Build arguments
 #
-ARG PM_BRANCH
-ARG PM_DOCKER_SOCK
+ARG PM_BRANCH=develop
+ARG PM_DOMAIN=localhost
+ARG PM_DIRECTORY=/var/www/html
+ARG PM_APP_PORT=8080
+ARG PM_BROADCASTER_PORT=6004
+ARG PM_DOCKER_SOCK=/var/run/docker.sock
 ARG GITHUB_EMAIL
 ARG GITHUB_USERNAME
 ARG GITHUB_OAUTH_TOKEN
@@ -26,12 +30,12 @@ ENV DEBIAN_FRONTEND                noninteractive
 ENV PHP_VERSION                    8.1
 ENV NODE_VERSION                   16.18.1
 ENV NVM_DIR                        /root/.nvm
-ENV PM_APP_PORT                    8080
-ENV PM_BROADCASTER_PORT            6004
-ENV PM_DOMAIN                      localhost
+ENV PM_APP_PORT                    ${PM_APP_PORT}
+ENV PM_BROADCASTER_PORT            ${PM_BROADCASTER_PORT}
+ENV PM_DOMAIN                      ${PM_DOMAIN}
 ENV PM_DOCKER_SOCK                 ${PM_DOCKER_SOCK}
 ENV PM_BRANCH                      ${PM_BRANCH}
-ENV PM_DIRECTORY                   /var/www/html
+ENV PM_DIRECTORY                   ${PM_DIRECTORY}
 ENV PM_COMPOSER_PACKAGES_PATH      /opt/packages
 ENV PM_SETUP_PATH                  /opt/setup
 ENV PM_ENV                         .docker.env
