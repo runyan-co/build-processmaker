@@ -66,7 +66,7 @@
     if [ ! -f "$ENV_REALPATH" ]; then
       cp "$PM_SETUP_PATH/.env.example" "$ENV_REALPATH"
     elif [ ! -L .env ]; then
-      ln -s "$ENV_REALPATH" .
+      ln -s "$ENV_REALPATH" .env
     fi
 
     #

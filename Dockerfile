@@ -201,10 +201,12 @@ RUN rm -f "$PM_ENV" && \
 COPY entrypoints/web.sh /usr/local/bin/web-entrypoint
 COPY entrypoints/queue.sh /usr/local/bin/queue-entrypoint
 COPY entrypoints/installer.sh /usr/local/bin/installer-entrypoint
+COPY entrypoints/echo.sh /usr/local/bin/echo-entrypoint
 
 RUN chmod +x /usr/local/bin/web-entrypoint && \
     chmod +x /usr/local/bin/queue-entrypoint && \
-    chmod +x /usr/local/bin/installer-entrypoint
+    chmod +x /usr/local/bin/installer-entrypoint && \
+    chmod +x /usr/local/bin/echo-entrypoint
 
 WORKDIR $PM_DIRECTORY
 

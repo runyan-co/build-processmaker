@@ -46,6 +46,12 @@
     fi
   }
 
+  removeLockFile() {
+    if [ -f laravel-echo-server.lock ]; then
+      rm -rf laravel-echo-server.lock
+    fi
+  }
+
   #
   # 1. Wait for the .env file (the installer service will place it
   #    in the storage:/var/www/html-/storage/keys directory)
@@ -57,7 +63,12 @@
   checkForMaintenanceMode
 
   #
-  # 3. Run the entrypoint command
+  # 3. Remove any existing echo server lock file
   #
-  bash -c '"$PHP_BINARY" "artisan" horizon --no-interaction --no-ansi'
+  removeLockFile
+
+  #
+  # 4. Run the entrypoint command
+  #
+  bash -c 'npx /var/www/html/node_modules/.bin/laravel-echo-server start --force --dev'
 }
