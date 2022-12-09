@@ -1,0 +1,48 @@
+{
+    "name": "runyan-co/pm-cli",
+    "description": "Useful cli tools for use with the containerized version of ProcessMaker",
+    "keywords": ["processmaker"],
+    "bin": ["pm-cli"],
+    "type": "project",
+    "license": "proprietary",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "authors": [
+        {
+            "name": "Alex Runyan",
+            "email": "alex@runyan.co"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "illuminate/encryption": "^9.43",
+        "illuminate/support": "^9.43",
+        "laravel-zero/framework": "^9.2",
+        "nunomaduro/termwind": "^1.14"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.2",
+        "mockery/mockery": "^1.4.4",
+        "pestphp/pest": "^1.21.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "ProcessMaker\\Cli\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}

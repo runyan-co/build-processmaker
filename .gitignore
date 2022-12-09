@@ -1,6 +1,3 @@
-.env
-.idea/
-/vendor/
-packages/
-scripts/vendor/
-scripts/composer.lock
+/.env
+/.idea
+/vendor
