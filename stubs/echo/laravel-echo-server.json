@@ -4,7 +4,6 @@
   "protocol": "http",
   "socketio": {},
   "database": "redis",
-  "host": "host.docker.internal",
   "databaseConfig": {
     "redis": {
       "host": "redis"

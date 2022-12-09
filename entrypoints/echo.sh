@@ -46,6 +46,9 @@
     fi
   }
 
+  #
+  # Remove the echo lock file so we can start with a fresh one
+  #
   removeLockFile() {
     if [ -f laravel-echo-server.lock ]; then
       rm -rf laravel-echo-server.lock

@@ -166,7 +166,7 @@ services:
       timeout: 3s
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 3
     build:
       context: .
       args:
@@ -222,6 +222,8 @@ services:
       timeout: 5s
     networks:
       - processmaker
+    ports:
+      - 3306:3306
     environment:
       MYSQL_DATABASE: processmaker
       MYSQL_ROOT_PASSWORD: password
