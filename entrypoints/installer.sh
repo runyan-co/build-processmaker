@@ -27,7 +27,7 @@
     PM_PACKAGES_DOTFILE=storage/build/.packages
 
     if [ ! -f "$PM_PACKAGES_DOTFILE" ]; then
-      for PACKAGE in $(php "$PM_SETUP_PATH/scripts/get-enterprise-package-names.php"); do
+      for PACKAGE in $(php "$PM_SETUP_PATH/cli/pm-cli" packages:list); do
         {
           echo "";
           echo "+----------------------------------------------------------"
