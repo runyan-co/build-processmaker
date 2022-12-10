@@ -38,39 +38,23 @@ ENV PM_BRANCH                      ${PM_BRANCH}
 ENV PM_DIRECTORY                   ${PM_DIRECTORY}
 ENV PM_COMPOSER_PACKAGES_PATH      /opt/packages
 ENV PM_SETUP_PATH                  /opt/setup
-ENV PM_ENV                         /.docker.env
+ENV PM_ENV                         .docker.env
 
 #
 # php-fpm limit defaults (these get written at entrypoint startup)
 #
-ENV FPM_PM_MAX_CHILDREN 20
-ENV FPM_PM_START_SERVERS 3
-ENV FPM_PM_MIN_SPARE_SERVERS 1
-ENV FPM_PM_MAX_SPARE_SERVERS 5
+ENV FPM_PM_MAX_CHILDREN 40
+ENV FPM_PM_START_SERVERS 5
+ENV FPM_PM_MIN_SPARE_SERVERS 3
+ENV FPM_PM_MAX_SPARE_SERVERS 10
 
 #
 # debian package updates and installs
 #
-RUN sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /etc/gai.conf && \
-    { \
-      if [ -f /etc/needrestart/needrestart.conf ]; then \
-        sed -i "s/^#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf; \
-      fi \
-    } && \
-    { \
-      if [ ! -f /swapfile ]; then \
-        fallocate -l 1G /swapfile; \
-        chmod 600 /swapfile; \
-        mkswap /swapfile; \
-        swapon /swapfile; \
-        echo "/swapfile none swap sw 0 0" >> /etc/fstab; \
-        echo "vm.swappiness=30" >> /etc/sysctl.conf; \
-        echo "vm.vfs_cache_pressure=50" >> /etc/sysctl.conf; \
-      fi \
-    } && \
-    apt-get update -y && \
+RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y --force-yes software-properties-common && \
+    apt-get update -y && \
     apt-add-repository ppa:ondrej/php -y && \
     apt-add-repository ppa:ondrej/nginx -y && \
     apt-get update -y && \
@@ -89,8 +73,6 @@ RUN sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /
     setcap "cap_net_bind_service=+ep" /usr/bin/php8.1 && \
     sed -i 's/www-data/root/g' /etc/php/8.1/fpm/pool.d/www.conf && \
     mkdir -p /run/php && \
-    chmod 733 /var/lib/php/sessions && \
-    chmod +t /var/lib/php/sessions && \
     update-alternatives --set php /usr/bin/php8.1 && \
     ln -sf /dev/stdout /var/log/nginx/access.log && \
     ln -sf /dev/stderr /var/log/nginx/error.log && \
@@ -101,7 +83,7 @@ RUN sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /
     tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker && \
     rm -f docker-${DOCKERVERSION}.tgz && \
     ln -s /usr/local/bin/docker /usr/bin/docker && \
-    rm -rf "$NVM_DIR" && \
+    rm -rf "$NVM_DIR" &&  \
     mkdir -p "$NVM_DIR" && \
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash && \
     chmod 0755 "$NVM_DIR/nvm.sh" && \
@@ -111,43 +93,6 @@ RUN sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /
     nvm use default && \
     nvm cache clear && \
     nvm unload && \
-    { \
-      echo "gzip_comp_level 5"; \
-      echo "gzip_min_length 256"; \
-      echo "gzip_proxied any"; \
-      echo "gzip_vary on"; \
-      echo "gzip_http_version 1.1"; \
-      echo "gzip_types"; \
-      echo "application/atom+xml"; \
-      echo "application/javascript"; \
-      echo "application/json"; \
-      echo "application/ld+json"; \
-      echo "application/manifest+json"; \
-      echo "application/rss+xml"; \
-      echo "application/vnd.geo+json"; \
-      echo "application/vnd.ms-fontobject"; \
-      echo "application/x-font-ttf"; \
-      echo "application/x-web-app-manifest+json"; \
-      echo "application/xhtml+xml"; \
-      echo "application/xml"; \
-      echo "font/opentype"; \
-      echo "image/bmp"; \
-      echo "image/svg+xml"; \
-      echo "image/x-icon"; \
-      echo "text/cache-manifest"; \
-      echo "text/css"; \
-      echo "text/plain"; \
-      echo "text/vcard"; \
-      echo "text/vnd.rim.location.xloc"; \
-      echo "text/vtt"; \
-      echo "text/x-component"; \
-      echo "text/x-cross-domain-policy;"; \
-    } >>/etc/nginx/conf.d/gzip.conf && \
-    { \
-      for CONF in "/etc/nginx/sites-enabled/default" "/etc/nginx/sites-available/default"; do \
-        if [ -f "$CONF" ]; then rm -rf "$CONF"; fi \
-      done \
-    } && \
     apt-get autoremove -y && \
     apt-get purge -y && \
     apt-get clean && \
@@ -162,7 +107,8 @@ ENV NPX_PATH /usr/local/bin/npx
 # cron and nginx config
 #
 COPY stubs/cron/laravel-cron /etc/cron.d/laravel-cron
-RUN chmod 0644 /etc/cron.d/laravel-cron && \
+
+RUN chmod 0644 /etc/cron.d/laravel-cron &&  \
     crontab /etc/cron.d/laravel-cron && \
     mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak && \
     mkdir -p /var/log/nginx && \
@@ -214,23 +160,25 @@ RUN composer config --global --list | grep "\[home\]" | awk '{print $2}' > .comp
     rm -rf "$PM_SETUP_PATH" && \
     mkdir -p "$PM_SETUP_PATH"
 
+WORKDIR $PM_SETUP_PATH
+
 #
 # bring over needed files
 #
-WORKDIR $PM_SETUP_PATH
-
 COPY stubs/.env.example .
 COPY stubs/echo/laravel-echo-server.json .
 COPY scripts/ scripts/
 
-RUN chmod -x scripts/*.php && \
-    cd scripts && \
+RUN chmod -x ./scripts/*.php &&\
+    cd scripts/ &&  \
     composer install --optimize-autoloader --no-ansi --no-interaction && \
     composer clear-cache --no-ansi --no-interaction
 
 #
 # add the .env variables into a .env file for use later
 #
+WORKDIR "/"
+
 RUN rm -f "$PM_ENV" && \
     touch "$PM_ENV" && \
     chmod -x "$PM_ENV" && \
@@ -260,12 +208,6 @@ RUN chmod +x /usr/local/bin/web-entrypoint && \
     chmod +x /usr/local/bin/installer-entrypoint && \
     chmod +x /usr/local/bin/echo-entrypoint
 
-#
-# move to our final wirking dir
-#
 WORKDIR $PM_DIRECTORY
 
-#
-# base entrypoint in case docker-compose.yml isn't used
-#
 ENTRYPOINT ["/bin/bash"]
