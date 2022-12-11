@@ -173,7 +173,7 @@ COPY stubs/.env.example .
 COPY stubs/echo/laravel-echo-server.json .
 
 #
-# install the ProcessMaker-specific
+# install the ProcessMaker-specific cli utility
 #
 COPY cli/ cli/
 
@@ -182,8 +182,10 @@ WORKDIR $PM_CLI_DIR
 RUN composer install --optimize-autoloader --no-ansi --no-interaction && \
     composer clear-cache --no-ansi --no-interaction && \
     echo "PM_DIRECTORY=$PM_DIR" > .env && \
-    ln -s "$PM_CLI_DIR/pm-cli" /usr/local/bin/pm-cli && \
-    chmod +x /usr/local/bin/pm-cli
+    ./pm-cli app:build pm-cli && \
+    mv ./builds/pm-cli /usr/local/bin && \
+    chmod +x /usr/local/bin/pm-cli && \
+    cd .. && rm -rf cli
 
 #
 # add the .env variables into a .env file for use later
