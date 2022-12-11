@@ -1,5 +1,6 @@
 {
   "authEndpoint": "/broadcasting/auth",
+  "authHost": "http://web",
   "devMode": true,
   "protocol": "http",
   "socketio": {},

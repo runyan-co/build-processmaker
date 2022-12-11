@@ -6,6 +6,9 @@ FROM ubuntu:22.04
 #
 SHELL ["/bin/bash", "-c"]
 
+#
+# work in the temp dir to keep the image size low
+#
 WORKDIR /tmp
 
 #
@@ -13,7 +16,7 @@ WORKDIR /tmp
 #
 ARG PM_BRANCH=develop
 ARG PM_DOMAIN=localhost
-ARG PM_DIRECTORY=/var/www/html
+ARG PM_DIR=/var/www/html
 ARG PM_APP_PORT=8080
 ARG PM_BROADCASTER_PORT=6004
 ARG PM_DOCKER_SOCK=/var/run/docker.sock
@@ -26,27 +29,28 @@ ARG DOCKERVERSION=20.10.5
 # environment vars
 #
 ENV COMPOSER_ALLOW_SUPERUSER       1
-ENV DEBIAN_FRONTEND                noninteractive
 ENV PHP_VERSION                    8.1
 ENV NODE_VERSION                   16.18.1
-ENV NVM_DIR                        /root/.nvm
+ENV DEBIAN_FRONTEND                noninteractive
 ENV PM_APP_PORT                    ${PM_APP_PORT}
 ENV PM_BROADCASTER_PORT            ${PM_BROADCASTER_PORT}
 ENV PM_DOMAIN                      ${PM_DOMAIN}
 ENV PM_DOCKER_SOCK                 ${PM_DOCKER_SOCK}
 ENV PM_BRANCH                      ${PM_BRANCH}
-ENV PM_DIRECTORY                   ${PM_DIRECTORY}
+ENV PM_DIR                         ${PM_DIR}
 ENV PM_COMPOSER_PACKAGES_PATH      /opt/packages
-ENV PM_SETUP_PATH                  /opt/setup
+ENV PM_SETUP_DIR                   /opt/setup
+ENV PM_CLI_DIR                     /opt/setup/cli
+ENV NVM_DIR                        /root/.nvm
 ENV PM_ENV                         .docker.env
 
 #
 # php-fpm limit defaults (these get written at entrypoint startup)
 #
-ENV FPM_PM_MAX_CHILDREN 40
-ENV FPM_PM_START_SERVERS 5
-ENV FPM_PM_MIN_SPARE_SERVERS 3
-ENV FPM_PM_MAX_SPARE_SERVERS 10
+ENV FPM_PM_MAX_CHILDREN 20
+ENV FPM_PM_START_SERVERS 3
+ENV FPM_PM_MIN_SPARE_SERVERS 1
+ENV FPM_PM_MAX_SPARE_SERVERS 5
 
 #
 # debian package updates and installs
@@ -157,22 +161,29 @@ COPY stubs/composer/config.json .
 #
 RUN composer config --global --list | grep "\[home\]" | awk '{print $2}' > .composer && \
     mv config.json $(cat .composer) && \
-    rm -rf "$PM_SETUP_PATH" && \
-    mkdir -p "$PM_SETUP_PATH"
+    rm -rf "$PM_SETUP_DIR" && \
+    mkdir -p "$PM_SETUP_DIR"
 
-WORKDIR $PM_SETUP_PATH
+WORKDIR $PM_SETUP_DIR
 
 #
-# bring over needed files
+# bring over needed config files
 #
 COPY stubs/.env.example .
 COPY stubs/echo/laravel-echo-server.json .
-COPY scripts/ scripts/
 
-RUN chmod -x ./scripts/*.php &&\
-    cd scripts/ &&  \
-    composer install --optimize-autoloader --no-ansi --no-interaction && \
-    composer clear-cache --no-ansi --no-interaction
+#
+# install the ProcessMaker-specific
+#
+COPY cli/ cli/
+
+WORKDIR $PM_CLI_DIR
+
+RUN composer install --optimize-autoloader --no-ansi --no-interaction && \
+    composer clear-cache --no-ansi --no-interaction && \
+    echo "PM_DIRECTORY=$PM_DIR" > .env && \
+    ln -s "$PM_CLI_DIR/pm-cli" /usr/local/bin/pm-cli && \
+    chmod +x /usr/local/bin/pm-cli
 
 #
 # add the .env variables into a .env file for use later
@@ -185,8 +196,9 @@ RUN rm -f "$PM_ENV" && \
     { \
         echo PHP_BINARY=$PHP_BINARY; \
         echo PM_COMPOSER_PACKAGES_PATH=$PM_COMPOSER_PACKAGES_PATH; \
-        echo PM_SETUP_PATH=$PM_SETUP_PATH; \
-        echo PM_DIRECTORY=$PM_DIRECTORY; \
+        echo PM_DIR=$PM_DIR; \
+        echo PM_CLI_DIR=$PM_CLI_DIR; \
+        echo PM_SETUP_DIR=$PM_SETUP_DIR; \
         echo PM_BRANCH=$PM_BRANCH; \
         echo PM_DOCKER_SOCK=$PM_DOCKER_SOCK; \
         echo COMPOSER_ALLOW_SUPERUSER=$COMPOSER_ALLOW_SUPERUSER; \
@@ -208,6 +220,6 @@ RUN chmod +x /usr/local/bin/web-entrypoint && \
     chmod +x /usr/local/bin/installer-entrypoint && \
     chmod +x /usr/local/bin/echo-entrypoint
 
-WORKDIR $PM_DIRECTORY
+WORKDIR $PM_DIR
 
 ENTRYPOINT ["/bin/bash"]

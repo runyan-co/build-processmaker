@@ -22,7 +22,7 @@ PM_IMAGE_NAME=
 PM_INSTALL_ENTERPRISE_PACKAGES=true
 # Absolute path to the ProcessMaker directory in the 
 # containers. You very likely will NOT need to change this
-PM_DIRECTORY=/var/www/html
+PM_DIR=/var/www/html
 # The absolute path to directory containing all local
 # versions of enterprise ProcessMaker composer 
 # packages on the HOST machine

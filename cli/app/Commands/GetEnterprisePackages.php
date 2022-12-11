@@ -33,11 +33,11 @@ class GetEnterprisePackages extends Command
      */
     public function handle(): void
     {
-        $pm_directory = config('app.pm-directory')
+        $PM_DIR = config('app.pm-directory')
             ?: $this->option('dir')
             ?? throw new DomainException('Path to processmaker platform not defined');
 
-        $composer_json = $this->getComposerJson($pm_directory);
+        $composer_json = $this->getComposerJson($PM_DIR);
 
         // Sort and remove these packages with the corresponding name
         // found in the array. This way we can prepend them later

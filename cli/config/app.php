@@ -2,7 +2,7 @@
 
 return [
 
-    'pm-directory' => env('PM_DIRECTORY'),
+    'pm-directory' => env('PM_DIR'),
 
     /*
     |--------------------------------------------------------------------------
