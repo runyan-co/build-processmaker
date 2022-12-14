@@ -31,7 +31,7 @@ services:
       - build:${PM_DIR}/storage/build:consistent
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
+      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - app-storage:${PM_DIR}/storage/app:consistent
       - logs:${PM_DIR}/storage/logs:delegated
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
@@ -84,7 +84,7 @@ services:
       - build:${PM_DIR}/storage/build:consistent
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
+      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - app-storage:${PM_DIR}/storage/app:consistent
       - logs:${PM_DIR}/storage/logs:delegated
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
@@ -134,7 +134,7 @@ services:
       - build:${PM_DIR}/storage/build:consistent
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
+      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - app-storage:${PM_DIR}/storage/app:consistent
       - logs:${PM_DIR}/storage/logs:delegated
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
@@ -190,7 +190,7 @@ services:
       - build:${PM_DIR}/storage/build:consistent
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
+      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - app-storage:${PM_DIR}/storage/app:consistent
       - logs:${PM_DIR}/storage/logs:delegated
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
