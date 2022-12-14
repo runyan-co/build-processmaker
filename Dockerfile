@@ -6,6 +6,9 @@ FROM ubuntu:22.04
 #
 SHELL ["/bin/bash", "-c"]
 
+#
+# work in the temp dir to keep the image size low
+#
 WORKDIR /tmp
 
 #
@@ -13,7 +16,7 @@ WORKDIR /tmp
 #
 ARG PM_BRANCH=develop
 ARG PM_DOMAIN=localhost
-ARG PM_DIRECTORY=/var/www/html
+ARG PM_DIR=/var/www/html
 ARG PM_APP_PORT=8080
 ARG PM_BROADCASTER_PORT=6004
 ARG PM_DOCKER_SOCK=/var/run/docker.sock
@@ -26,19 +29,20 @@ ARG DOCKERVERSION=20.10.5
 # environment vars
 #
 ENV COMPOSER_ALLOW_SUPERUSER       1
-ENV DEBIAN_FRONTEND                noninteractive
 ENV PHP_VERSION                    8.1
 ENV NODE_VERSION                   16.18.1
-ENV NVM_DIR                        /root/.nvm
+ENV DEBIAN_FRONTEND                noninteractive
 ENV PM_APP_PORT                    ${PM_APP_PORT}
 ENV PM_BROADCASTER_PORT            ${PM_BROADCASTER_PORT}
 ENV PM_DOMAIN                      ${PM_DOMAIN}
 ENV PM_DOCKER_SOCK                 ${PM_DOCKER_SOCK}
 ENV PM_BRANCH                      ${PM_BRANCH}
-ENV PM_DIRECTORY                   ${PM_DIRECTORY}
+ENV PM_DIR                         ${PM_DIR}
 ENV PM_COMPOSER_PACKAGES_PATH      /opt/packages
-ENV PM_SETUP_PATH                  /opt/setup
-ENV PM_ENV                         /.docker.env
+ENV PM_SETUP_DIR                   /opt/setup
+ENV PM_CLI_DIR                     /opt/setup/cli
+ENV NVM_DIR                        /root/.nvm
+ENV PM_ENV                         .docker.env
 
 #
 # php-fpm limit defaults (these get written at entrypoint startup)
@@ -51,26 +55,10 @@ ENV FPM_PM_MAX_SPARE_SERVERS 5
 #
 # debian package updates and installs
 #
-RUN sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /etc/gai.conf && \
-    { \
-      if [ -f /etc/needrestart/needrestart.conf ]; then \
-        sed -i "s/^#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf; \
-      fi \
-    } && \
-    { \
-      if [ ! -f /swapfile ]; then \
-        fallocate -l 1G /swapfile; \
-        chmod 600 /swapfile; \
-        mkswap /swapfile; \
-        swapon /swapfile; \
-        echo "/swapfile none swap sw 0 0" >> /etc/fstab; \
-        echo "vm.swappiness=30" >> /etc/sysctl.conf; \
-        echo "vm.vfs_cache_pressure=50" >> /etc/sysctl.conf; \
-      fi \
-    } && \
-    apt-get update -y && \
+RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y --force-yes software-properties-common && \
+    apt-get update -y && \
     apt-add-repository ppa:ondrej/php -y && \
     apt-add-repository ppa:ondrej/nginx -y && \
     apt-get update -y && \
@@ -89,8 +77,6 @@ RUN sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /
     setcap "cap_net_bind_service=+ep" /usr/bin/php8.1 && \
     sed -i 's/www-data/root/g' /etc/php/8.1/fpm/pool.d/www.conf && \
     mkdir -p /run/php && \
-    chmod 733 /var/lib/php/sessions && \
-    chmod +t /var/lib/php/sessions && \
     update-alternatives --set php /usr/bin/php8.1 && \
     ln -sf /dev/stdout /var/log/nginx/access.log && \
     ln -sf /dev/stderr /var/log/nginx/error.log && \
@@ -101,7 +87,7 @@ RUN sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /
     tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker && \
     rm -f docker-${DOCKERVERSION}.tgz && \
     ln -s /usr/local/bin/docker /usr/bin/docker && \
-    rm -rf "$NVM_DIR" && \
+    rm -rf "$NVM_DIR" &&  \
     mkdir -p "$NVM_DIR" && \
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash && \
     chmod 0755 "$NVM_DIR/nvm.sh" && \
@@ -111,43 +97,6 @@ RUN sed -i "s/#precedence ::ffff:0:0\/96  100/precedence ::ffff:0:0\/96  100/" /
     nvm use default && \
     nvm cache clear && \
     nvm unload && \
-    { \
-      echo "gzip_comp_level 5"; \
-      echo "gzip_min_length 256"; \
-      echo "gzip_proxied any"; \
-      echo "gzip_vary on"; \
-      echo "gzip_http_version 1.1"; \
-      echo "gzip_types"; \
-      echo "application/atom+xml"; \
-      echo "application/javascript"; \
-      echo "application/json"; \
-      echo "application/ld+json"; \
-      echo "application/manifest+json"; \
-      echo "application/rss+xml"; \
-      echo "application/vnd.geo+json"; \
-      echo "application/vnd.ms-fontobject"; \
-      echo "application/x-font-ttf"; \
-      echo "application/x-web-app-manifest+json"; \
-      echo "application/xhtml+xml"; \
-      echo "application/xml"; \
-      echo "font/opentype"; \
-      echo "image/bmp"; \
-      echo "image/svg+xml"; \
-      echo "image/x-icon"; \
-      echo "text/cache-manifest"; \
-      echo "text/css"; \
-      echo "text/plain"; \
-      echo "text/vcard"; \
-      echo "text/vnd.rim.location.xloc"; \
-      echo "text/vtt"; \
-      echo "text/x-component"; \
-      echo "text/x-cross-domain-policy;"; \
-    } >>/etc/nginx/conf.d/gzip.conf && \
-    { \
-      for CONF in "/etc/nginx/sites-enabled/default" "/etc/nginx/sites-available/default"; do \
-        if [ -f "$CONF" ]; then rm -rf "$CONF"; fi \
-      done \
-    } && \
     apt-get autoremove -y && \
     apt-get purge -y && \
     apt-get clean && \
@@ -162,7 +111,8 @@ ENV NPX_PATH /usr/local/bin/npx
 # cron and nginx config
 #
 COPY stubs/cron/laravel-cron /etc/cron.d/laravel-cron
-RUN chmod 0644 /etc/cron.d/laravel-cron && \
+
+RUN chmod 0644 /etc/cron.d/laravel-cron &&  \
     crontab /etc/cron.d/laravel-cron && \
     mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak && \
     mkdir -p /var/log/nginx && \
@@ -211,34 +161,46 @@ COPY stubs/composer/config.json .
 #
 RUN composer config --global --list | grep "\[home\]" | awk '{print $2}' > .composer && \
     mv config.json $(cat .composer) && \
-    rm -rf "$PM_SETUP_PATH" && \
-    mkdir -p "$PM_SETUP_PATH"
+    rm -rf "$PM_SETUP_DIR" && \
+    mkdir -p "$PM_SETUP_DIR"
+
+WORKDIR $PM_SETUP_DIR
 
 #
-# bring over needed files
+# bring over needed config files
 #
-WORKDIR $PM_SETUP_PATH
-
 COPY stubs/.env.example .
 COPY stubs/echo/laravel-echo-server.json .
-COPY scripts/ scripts/
 
-RUN chmod -x scripts/*.php && \
-    cd scripts && \
-    composer install --optimize-autoloader --no-ansi --no-interaction && \
-    composer clear-cache --no-ansi --no-interaction
+#
+# install the ProcessMaker-specific cli utility
+#
+COPY cli/ cli/
+
+WORKDIR $PM_CLI_DIR
+
+RUN composer install --optimize-autoloader --no-ansi --no-interaction && \
+    composer clear-cache --no-ansi --no-interaction && \
+    echo "PM_DIRECTORY=$PM_DIR" > .env && \
+    ./pm-cli app:build pm-cli && \
+    mv ./builds/pm-cli /usr/local/bin && \
+    chmod +x /usr/local/bin/pm-cli && \
+    cd .. && rm -rf cli
 
 #
 # add the .env variables into a .env file for use later
 #
+WORKDIR "/"
+
 RUN rm -f "$PM_ENV" && \
     touch "$PM_ENV" && \
     chmod -x "$PM_ENV" && \
     { \
         echo PHP_BINARY=$PHP_BINARY; \
         echo PM_COMPOSER_PACKAGES_PATH=$PM_COMPOSER_PACKAGES_PATH; \
-        echo PM_SETUP_PATH=$PM_SETUP_PATH; \
-        echo PM_DIRECTORY=$PM_DIRECTORY; \
+        echo PM_DIR=$PM_DIR; \
+        echo PM_CLI_DIR=$PM_CLI_DIR; \
+        echo PM_SETUP_DIR=$PM_SETUP_DIR; \
         echo PM_BRANCH=$PM_BRANCH; \
         echo PM_DOCKER_SOCK=$PM_DOCKER_SOCK; \
         echo COMPOSER_ALLOW_SUPERUSER=$COMPOSER_ALLOW_SUPERUSER; \
@@ -260,12 +222,6 @@ RUN chmod +x /usr/local/bin/web-entrypoint && \
     chmod +x /usr/local/bin/installer-entrypoint && \
     chmod +x /usr/local/bin/echo-entrypoint
 
-#
-# move to our final wirking dir
-#
-WORKDIR $PM_DIRECTORY
+WORKDIR $PM_DIR
 
-#
-# base entrypoint in case docker-compose.yml isn't used
-#
 ENTRYPOINT ["/bin/bash"]

@@ -26,8 +26,16 @@
   installEnterprisePackages() {
     PM_PACKAGES_DOTFILE=storage/build/.packages
 
+    echo "";
+    echo "+----------------------------------------------------------"
+    echo "|"
+    echo "|    Installing enterprise packages";
+    echo "|"
+    echo "+----------------------------------------------------------"
+    echo "";
+
     if [ ! -f "$PM_PACKAGES_DOTFILE" ]; then
-      for PACKAGE in $(php "$PM_SETUP_PATH/scripts/get-enterprise-package-names.php"); do
+      for PACKAGE in $(pm-cli packages:list); do
         {
           echo "";
           echo "+----------------------------------------------------------"
@@ -47,10 +55,22 @@
       done
 
       composer dumpautoload -o --no-ansi --no-interaction
-      echo "Enterprise packages installed!"
 
+      echo "";
+      echo "+----------------------------------------------------------"
+      echo "|"
+      echo "|    Enterprise packages installed";
+      echo "|"
+      echo "+----------------------------------------------------------"
+      echo "";
     else
-      echo "Enterprise packages already installed"
+      echo "";
+      echo "+----------------------------------------------------------"
+      echo "|"
+      echo "|    Enterprise packages already installed";
+      echo "|"
+      echo "+----------------------------------------------------------"
+      echo "";
     fi
   }
 
@@ -63,8 +83,16 @@
     #
     ENV_REALPATH=storage/build/.env
 
+    echo "";
+    echo "+----------------------------------------------------------"
+    echo "|"
+    echo "|    Setting up environment";
+    echo "|"
+    echo "+----------------------------------------------------------"
+    echo "";
+
     if [ ! -f "$ENV_REALPATH" ]; then
-      cp "$PM_SETUP_PATH/.env.example" "$ENV_REALPATH"
+      cp "$PM_SETUP_DIR/.env.example" "$ENV_REALPATH"
     elif [ ! -L .env ]; then
       ln -s "$ENV_REALPATH" .env
     fi
@@ -77,10 +105,10 @@
         echo "APP_URL=http://${PM_DOMAIN}:${PM_APP_PORT}"
         echo "BROADCASTER_HOST=http://${PM_DOMAIN}:${PM_BROADCASTER_PORT}"
         echo "SESSION_DOMAIN=${PM_DOMAIN}"
-        echo "HOME=${PM_DIRECTORY}"
+        echo "HOME=${PM_DIR}"
         echo "NODE_BIN_PATH=$(which node)"
         echo "PROCESSMAKER_SCRIPTS_DOCKER=$(which docker)"
-        echo "PROCESSMAKER_SCRIPTS_HOME=${PM_DIRECTORY}/storage/app/scripts"
+        echo "PROCESSMAKER_SCRIPTS_HOME=${PM_DIR}/storage/app/scripts"
       } >>"$ENV_REALPATH"
     fi
   }
@@ -96,7 +124,7 @@
   # Copy laravel echo server config
   #
   copyEchoServerConfig() {
-    cp "$PM_SETUP_PATH/laravel-echo-server.json" .
+    cp "$PM_SETUP_DIR/laravel-echo-server.json" .
   }
 
   #
@@ -119,6 +147,14 @@
   # Install app's composer dependencies
   #
   installComposerDeps() {
+    echo "";
+    echo "+----------------------------------------------------------";
+    echo "|";
+    echo "|    Installing composer dependencies";
+    echo "|";
+    echo "+----------------------------------------------------------";
+    echo "";
+
     composer install \
       --no-progress \
       --optimize-autoloader \
@@ -134,7 +170,24 @@
   # Install app's npm dependencies
   #
   installNpmDeps() {
+    echo "";
+    echo "+----------------------------------------------------------"
+    echo "|"
+    echo "|    Installing npm dependencies";
+    echo "|"
+    echo "+----------------------------------------------------------"
+    echo "";
+
     npm clean-install --no-audit
+
+    echo "";
+    echo "+----------------------------------------------------------"
+    echo "|"
+    echo "|    Compiling npm assets";
+    echo "|"
+    echo "+----------------------------------------------------------"
+    echo "";
+
     npm run dev --no-progress
     npm cache clear --force
   }
@@ -226,11 +279,6 @@
         echo "Could not install enterprise packages" && exit 1
       fi
     fi
-
-    #
-    # Bring the app back up
-    #
-    php artisan horizon:terminate --no-interaction --no-ansi
 
     #
     # Mark as installed
