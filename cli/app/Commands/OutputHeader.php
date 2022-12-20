@@ -30,8 +30,6 @@ class OutputHeader extends Command
     {
         $this->newLine();
 
-        $this->alert(PHP_EOL.$this->argument('input').PHP_EOL);
-
-        $this->newLine();
+        $this->alert($this->argument('input'));
     }
 }

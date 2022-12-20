@@ -57,7 +57,7 @@ RUN apt-get update -y && \
     apt-get install -y --force-yes \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-            nginx cron supervisor vim htop curl git zip unzip wget mysql-client \
+            time nginx cron supervisor vim htop curl git zip unzip wget mysql-client \
             pkg-config gcc g++ libmcrypt4 libpcre3-dev make python3 python3-pip whois acl \
             libpng-dev libmagickwand-dev libpcre2-dev jq net-tools build-essential \
             php8.1 php8.1-fpm php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd \

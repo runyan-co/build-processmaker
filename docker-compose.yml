@@ -36,8 +36,8 @@ services:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
-      - ${PM_APP_SOURCE}/node_modules:${PM_DIR}/node_modules:consistent
-      - ${PM_APP_SOURCE}/vendor:${PM_DIR}/vendor:consistent
+      - node-modules:${PM_DIR}/node_modules
+      - composer-vendor:${PM_DIR}/vendor
       - app-storage:${PM_DIR}/storage/app:consistent
       - build:${PM_DIR}/storage/build:consistent
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
@@ -68,10 +68,10 @@ services:
     env_file:
       - .env
     environment:
-      - DB_USERNAME=web
-      - DB_PASSWORD=web
-      - DATA_DB_USERNAME=web
-      - DATA_DB_PASSWORD=web
+      - DB_USERNAME=${DB_ROOT_USERNAME}
+      - DB_PASSWORD=${DB_ROOT_PASSWORD}
+      - DATA_DB_USERNAME=${DB_ROOT_USERNAME}
+      - DATA_DB_PASSWORD=${DB_ROOT_PASSWORD}
     build:
       context: .
       args:
@@ -92,8 +92,8 @@ services:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
-      - ${PM_APP_SOURCE}/node_modules:${PM_DIR}/node_modules:consistent
-      - ${PM_APP_SOURCE}/vendor:${PM_DIR}/vendor:consistent
+      - node-modules:${PM_DIR}/node_modules
+      - composer-vendor:${PM_DIR}/vendor
       - app-storage:${PM_DIR}/storage/app:consistent
       - build:${PM_DIR}/storage/build:consistent
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
@@ -140,8 +140,8 @@ services:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
-      - ${PM_APP_SOURCE}/node_modules:${PM_DIR}/node_modules:consistent
-      - ${PM_APP_SOURCE}/vendor:${PM_DIR}/vendor:consistent
+      - node-modules:${PM_DIR}/node_modules
+      - composer-vendor:${PM_DIR}/vendor
       - app-storage:${PM_DIR}/storage/app:consistent
       - build:${PM_DIR}/storage/build:consistent
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
@@ -158,7 +158,7 @@ services:
   queue:
     image: processmaker:${PM_IMAGE_NAME}
     restart: always
-    entrypoint: ["/usr/local/bin/queue-entrypoint"]
+    entrypoint: ["/bin/time /usr/local/bin/queue-entrypoint"]
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     dns:
@@ -189,18 +189,18 @@ services:
     env_file:
       - .env
     environment:
-      - DB_USERNAME=queue
-      - DB_PASSWORD=queue
-      - DATA_DB_USERNAME=queue
-      - DATA_DB_PASSWORD=queue
+      - DB_USERNAME=${DB_ROOT_USERNAME}
+      - DB_PASSWORD=${DB_ROOT_PASSWORD}
+      - DATA_DB_USERNAME=${DB_ROOT_USERNAME}
+      - DATA_DB_PASSWORD=${DB_ROOT_PASSWORD}
     networks:
       - processmaker
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
-      - ${PM_APP_SOURCE}/node_modules:${PM_DIR}/node_modules:consistent
-      - ${PM_APP_SOURCE}/vendor:${PM_DIR}/vendor:consistent
+      - node-modules:${PM_DIR}/node_modules
+      - composer-vendor:${PM_DIR}/vendor
       - app-storage:${PM_DIR}/storage/app:consistent
       - build:${PM_DIR}/storage/build:consistent
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated

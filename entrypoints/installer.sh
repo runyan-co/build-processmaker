@@ -11,21 +11,6 @@
   }
 
   #
-  # create mysql users
-  #
-  createMysqlUsers() {
-    {
-      echo "CREATE USER 'web'@'%' IDENTIFIED BY 'web';"; \
-      echo "GRANT LOCK TABLES, SHOW DATABASES, CREATE TABLESPACE ON *.* TO 'web'@'%';"; \
-      echo "GRANT UPDATE, GRANT OPTION, DELETE, CREATE ROUTINE, EXECUTE, INSERT, REFERENCES, SELECT, INDEX, ALTER, SHOW VIEW, ALTER ROUTINE, LOCK TABLES, TRIGGER, EVENT, CREATE VIEW, DROP, CREATE, CREATE TEMPORARY TABLES ON processmaker.* TO 'web'@'%';"; \
-      echo "CREATE USER 'queue'@'%' IDENTIFIED BY 'queue';"; \
-      echo "GRANT LOCK TABLES, SHOW DATABASES, CREATE TABLESPACE ON *.* TO 'queue'@'%';"; \
-      echo "GRANT UPDATE, GRANT OPTION, DELETE, CREATE ROUTINE, EXECUTE, INSERT, REFERENCES, SELECT, INDEX, ALTER, SHOW VIEW, ALTER ROUTINE, LOCK TABLES, TRIGGER, EVENT, CREATE VIEW, DROP, CREATE, CREATE TEMPORARY TABLES ON processmaker.* TO 'queue'@'%';"; \
-      echo "FLUSH PRIVILEGES;";
-    } | mysql -P "$DB_PORT" -u "$DB_USERNAME" -h "$DB_HOST" -p"$DB_PASSWORD" "$DB_NAME"
-  }
-
-  #
   # Change to desired processmaker/processmaker version
   #
   switchProcessMakerVersion() {
@@ -46,19 +31,19 @@
     if [ ! -f "$PM_PACKAGES_DOTFILE" ]; then
       for PACKAGE in $(pm-cli packages:list); do
         {
-          pm-cli output:header "Installing processmaker/$PACKAGE";
-          composer require "processmaker/$PACKAGE" --quiet --no-ansi --no-plugins --no-interaction;
-          php artisan "$PACKAGE:install" --no-ansi --no-interaction;
-          php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction;
-          echo "$PACKAGE" >>"$PM_PACKAGES_DOTFILE";
+          pm-cli output:header "Installing processmaker/$PACKAGE"
+          composer require "processmaker/$PACKAGE" --quiet --no-ansi --no-plugins --no-interaction
+          php artisan "$PACKAGE:install" --no-ansi --no-interaction
+          php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction
+          echo "$PACKAGE" >>"$PM_PACKAGES_DOTFILE"
         }
       done
 
       composer dumpautoload -o --no-ansi --no-interaction
-      pm-cli output:header "Enterprise packages installed";
+      pm-cli output:header "Enterprise packages installed"
 
     else
-      pm-cli output:header "Enterprise packages already installed";
+      pm-cli output:header "Enterprise packages already installed"
     fi
   }
 
@@ -71,18 +56,18 @@
     #
     ENV_REALPATH=storage/build/.env
 
-    pm-cli output:header "Setting up environment";
+    pm-cli output:header "Setting up environment"
 
     if [ ! -f "$ENV_REALPATH" ]; then
       cp "$PM_SETUP_DIR/.env.example" "$ENV_REALPATH"
     elif [ ! -L .env ]; then
-      ln -s "$ENV_REALPATH" .env
+      rm .env && ln -s "$ENV_REALPATH" .env
     fi
 
     #
     # Make sure these are defined for use in the .env
     #
-    if ! grep "APP_URL=http://${PM_DOMAIN}" < .env; then
+    if ! grep "APP_URL=http://${PM_DOMAIN}" <.env; then
       #
       # append the port to the app url if it's not port 80
       #
@@ -131,14 +116,14 @@
         mv "$FILE" storage/build
         ln -s "storage/build/$FILE" .
       fi
-    done;
+    done
   }
 
   #
   # Install app's composer dependencies
   #
   installComposerDeps() {
-    pm-cli output:header "Installing composer dependencies";
+    pm-cli output:header "Installing composer dependencies"
 
     composer install \
       --no-progress \
@@ -155,10 +140,10 @@
   # Install app's npm dependencies
   #
   installNpmDeps() {
-    pm-cli output:header "Installing npm dependencies";
+    pm-cli output:header "Installing npm dependencies"
     npm clean-install --no-audit
 
-    pm-cli output:header "Compiling npm assets";
+    pm-cli output:header "Compiling npm assets"
     npm run dev --no-progress
     npm cache clear --force
   }
@@ -188,7 +173,7 @@
     # Wait for the deps to finish installing
     # and for the assets to be compiled
     #
-    wait;
+    wait
 
     php artisan key:generate --no-interaction --no-ansi
     php artisan package:discover --no-interaction --no-ansi
@@ -219,11 +204,6 @@
     # Wait for MySQL to come online
     #
     awaitMysql
-
-    #
-    # setup mysql users
-    #
-    createMysqlUsers
 
     #
     # setup the environment
@@ -263,22 +243,27 @@
   }
 
   #
-  # Source a few necessary env variables
+  # entrypoint function
   #
-  sourceDockerEnv
+  entrypoint() {
+    #
+    # Source a few necessary env variables
+    #
+    sourceDockerEnv
 
-  #
-  # If we don't find a linked .env file and this is
-  # a web service, then we need to run the
-  # app's artisan install command
-  #
-  if [ ! -f storage/build/.installed ]; then
-    echo "" > storage/build/install.log
+    #
+    # If we don't find a linked .env file and this is
+    # a web service, then we need to run the
+    # app's artisan install command
+    #
+    if [ ! -f storage/build/.installed ]; then
+      echo "" >storage/build/install.log
 
-    if ! installProcessMaker | tee -a storage/build/install.log; then
-      pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1
+      if ! installProcessMaker | tee -a storage/build/install.log; then
+        pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1
+      fi
     fi
-  fi
+  }
 
-  exec "$@"
+  entrypoint && exec "$@"
 }
