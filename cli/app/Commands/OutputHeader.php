@@ -31,5 +31,7 @@ class OutputHeader extends Command
         $this->newLine();
 
         $this->alert($this->argument('input'));
+
+        $this->newLine();
     }
 }

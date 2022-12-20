@@ -25,9 +25,13 @@
     #
     {
       echo "DB_USERNAME=$DB_USERNAME";
+      echo "DB_HOST=$DB_HOST";
+      echo "DB_HOSTNAME=$DB_HOSTNAME";
       echo "DB_PASSWORD=$DB_PASSWORD";
-      echo "DATA_DB_USERNAME=$DB_USERNAME";
-      echo "DATA_DB_PASSWORD=$DB_PASSWORD";
+      echo "DATA_DB_HOST=$DATA_DB_HOST";
+      echo "DATA_DB_USERNAME=$DATA_DB_USERNAME";
+      echo "DATA_DB_PASSWORD=$DATA_DB_PASSWORD";
+      echo "DATA_DB_PORT=$DATA_DB_PORT";
     } >>.env
 
     #

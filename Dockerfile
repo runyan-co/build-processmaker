@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1
 FROM ubuntu:22.04
+MAINTAINER "Alex Runyan <alex@runyan.co>"
 
 #
 # Set bash as the default shell

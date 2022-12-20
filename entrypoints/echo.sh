@@ -12,9 +12,12 @@
     if [ ! -f storage/build/.env ]; then
       echo "App env file not found (env not ready)..."
       sleep 1 && exit 0
-    elif [ ! -f .env ]; then
-      ln -s storage/build/.env .env
     fi
+
+    #
+    # copy over the .env
+    #
+    rm .env && cp storage/build/.env .env
 
     #
     # Check for the app composer.json

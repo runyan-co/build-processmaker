@@ -28,16 +28,19 @@ services:
     env_file:
       - .env
     environment:
+      - DB_HOSTNAME=${DB_HOST}
       - DB_USERNAME=${DB_ROOT_USERNAME}
       - DB_PASSWORD=${DB_ROOT_PASSWORD}
+      - DATA_DB_HOST=${DB_HOST}
       - DATA_DB_USERNAME=${DB_ROOT_USERNAME}
       - DATA_DB_PASSWORD=${DB_ROOT_PASSWORD}
+      - DATA_DB_PORT=${DB_PORT}
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
-      - node-modules:${PM_DIR}/node_modules
-      - composer-vendor:${PM_DIR}/vendor
+      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
+      - node-modules:${PM_DIR}/node_modules:delegated
+      - composer-vendor:${PM_DIR}/vendor:delegated
       - app-storage:${PM_DIR}/storage/app:consistent
       - build:${PM_DIR}/storage/build:consistent
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
@@ -68,10 +71,13 @@ services:
     env_file:
       - .env
     environment:
+      - DB_HOSTNAME=${DB_HOST}
       - DB_USERNAME=${DB_ROOT_USERNAME}
       - DB_PASSWORD=${DB_ROOT_PASSWORD}
+      - DATA_DB_HOST=${DB_HOST}
       - DATA_DB_USERNAME=${DB_ROOT_USERNAME}
       - DATA_DB_PASSWORD=${DB_ROOT_PASSWORD}
+      - DATA_DB_PORT=${DB_PORT}
     build:
       context: .
       args:
@@ -91,7 +97,7 @@ services:
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
       - node-modules:${PM_DIR}/node_modules
       - composer-vendor:${PM_DIR}/vendor
       - app-storage:${PM_DIR}/storage/app:consistent
@@ -139,7 +145,7 @@ services:
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
       - node-modules:${PM_DIR}/node_modules
       - composer-vendor:${PM_DIR}/vendor
       - app-storage:${PM_DIR}/storage/app:consistent
@@ -158,7 +164,7 @@ services:
   queue:
     image: processmaker:${PM_IMAGE_NAME}
     restart: always
-    entrypoint: ["/bin/time /usr/local/bin/queue-entrypoint"]
+    entrypoint: ["/usr/local/bin/queue-entrypoint"]
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     dns:
@@ -189,16 +195,19 @@ services:
     env_file:
       - .env
     environment:
+      - DB_HOSTNAME=${DB_HOST}
       - DB_USERNAME=${DB_ROOT_USERNAME}
       - DB_PASSWORD=${DB_ROOT_PASSWORD}
+      - DATA_DB_HOST=${DB_HOST}
       - DATA_DB_USERNAME=${DB_ROOT_USERNAME}
       - DATA_DB_PASSWORD=${DB_ROOT_PASSWORD}
+      - DATA_DB_PORT=${DB_PORT}
     networks:
       - processmaker
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
       - node-modules:${PM_DIR}/node_modules
       - composer-vendor:${PM_DIR}/vendor
       - app-storage:${PM_DIR}/storage/app:consistent

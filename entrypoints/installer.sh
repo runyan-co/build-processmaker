@@ -11,18 +11,6 @@
   }
 
   #
-  # Change to desired processmaker/processmaker version
-  #
-  switchProcessMakerVersion() {
-    git restore .
-    git clean -d -f
-    git fetch origin "$PM_BRANCH"
-    git stash
-    git checkout "$PM_BRANCH"
-    git pull
-  }
-
-  #
   # Installs ProcessMaker enterprise packages
   #
   installEnterprisePackages() {
@@ -153,11 +141,6 @@
   #
   installApplication() {
     #
-    # Cleanup
-    #
-    switchProcessMakerVersion
-
-    #
     # Setup configuration files
     #
     linkComposerFiles
@@ -173,8 +156,12 @@
     # Wait for the deps to finish installing
     # and for the assets to be compiled
     #
-    wait
+    wait;
 
+    #
+    # run the remaining artisan commands
+    # to setup the application
+    #
     php artisan key:generate --no-interaction --no-ansi
     php artisan package:discover --no-interaction --no-ansi
     php artisan horizon:publish --no-interaction --no-ansi
@@ -221,16 +208,9 @@
     fi
 
     #
-    # Make sure this is defined
-    #
-    if [ -n "$PM_INSTALL_ENTERPRISE_PACKAGES" ]; then
-      export PM_INSTALL_ENTERPRISE_PACKAGES=true
-    fi
-
-    #
     # install the ProcessMaker-specific enterprise packages, if desired
     #
-    if [ "$PM_INSTALL_ENTERPRISE_PACKAGES" = true ]; then
+    if [ -z "$PM_INSTALL_ENTERPRISE_PACKAGES" ] && [ "$PM_INSTALL_ENTERPRISE_PACKAGES" = true ]; then
       if ! installEnterprisePackages; then
         pm-cli output:error "Could not install enterprise packages" && exit 1
       fi
