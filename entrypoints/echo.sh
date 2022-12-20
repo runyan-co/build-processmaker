@@ -9,31 +9,10 @@
     # Check for the app .env and link it
     # when found, otherwise bail
     #
-    if [ ! -f storage/build/.env ]; then
+    if [ ! -f .env ]; then
       echo "App env file not found (env not ready)..."
       sleep 1 && exit 0
     fi
-
-    #
-    # copy over the .env
-    #
-    rm .env && cp storage/build/.env .env
-
-    #
-    # Check for the app composer.json
-    # and link it if it's not already,
-    # and if we don't find it, bail
-    #
-    for EXT in "json" "lock"; do
-      if [ ! -f "storage/build/composer.$EXT" ]; then
-        echo "Composer.$EXT not found (app not fully installed). Restarting..."
-        sleep 1 && exit 0
-      fi
-
-      if [ ! -L "composer.$EXT" ]; then
-        ln -s "storage/build/composer.$EXT" .
-      fi
-    done;
   }
 
   #
@@ -43,7 +22,7 @@
     if [ -f storage/framework/maintenance.php ]; then
       echo "ProcessMaker in maintenance mode..."
       sleep 3 && exit 0
-    elif [ ! -f storage/build/.installed ]; then
+    elif [ ! -f storage/install/.installed ]; then
       echo "ProcessMaker installation not complete.."
       sleep 3 && exit 0
     fi

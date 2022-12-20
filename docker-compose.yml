@@ -5,6 +5,7 @@ services:
     entrypoint: ["/usr/local/bin/installer-entrypoint"]
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+      - '${PM_DOMAIN}:host-gateway'
     dns:
       - 1.1.1.1
       - 1.0.0.1
@@ -37,17 +38,18 @@ services:
       - DATA_DB_PORT=${DB_PORT}
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
-      - node-modules:${PM_DIR}/node_modules:delegated
-      - composer-vendor:${PM_DIR}/vendor:delegated
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
+      - persistent-build:${PM_DIR}/storage/install
+      - ${PM_APP_SOURCE}/storage/build:${PM_DIR}/storage/build:consistent
+      - ${PM_APP_SOURCE}:${PM_DIR}
+      - node-modules:${PM_DIR}/node_modules
+      - composer-vendor:${PM_DIR}/vendor
       - app-storage:${PM_DIR}/storage/app:consistent
-      - build:${PM_DIR}/storage/build:consistent
-      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
-      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
-      - compiled-views:${PM_DIR}/storage/framework/views:delegated
-      - logs:${PM_DIR}/storage/logs:delegated
-      - public:${PM_DIR}/public:delegated
+      - compiled-classes:${PM_DIR}/bootstrap/cache
+      - compiled-facades:${PM_DIR}/storage/framework/cache
+      - compiled-views:${PM_DIR}/storage/framework/views
+      - logs:${PM_DIR}/storage/logs
+      - public:${PM_DIR}/public
     links:
       - redis
     depends_on:
@@ -62,6 +64,7 @@ services:
       timeout: 3s
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+      - '${PM_DOMAIN}:host-gateway'
     dns:
       - 1.1.1.1
       - 1.0.0.1
@@ -70,14 +73,6 @@ services:
       - 0.0.0.0
     env_file:
       - .env
-    environment:
-      - DB_HOSTNAME=${DB_HOST}
-      - DB_USERNAME=${DB_ROOT_USERNAME}
-      - DB_PASSWORD=${DB_ROOT_PASSWORD}
-      - DATA_DB_HOST=${DB_HOST}
-      - DATA_DB_USERNAME=${DB_ROOT_USERNAME}
-      - DATA_DB_PASSWORD=${DB_ROOT_PASSWORD}
-      - DATA_DB_PORT=${DB_PORT}
     build:
       context: .
       args:
@@ -96,17 +91,18 @@ services:
       - ${PM_APP_PORT}:80
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
+      - persistent-build:${PM_DIR}/storage/install
+      - ${PM_APP_SOURCE}/storage/build:${PM_DIR}/storage/build:consistent
+      - ${PM_APP_SOURCE}:${PM_DIR}
       - node-modules:${PM_DIR}/node_modules
       - composer-vendor:${PM_DIR}/vendor
       - app-storage:${PM_DIR}/storage/app:consistent
-      - build:${PM_DIR}/storage/build:consistent
-      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
-      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
-      - compiled-views:${PM_DIR}/storage/framework/views:delegated
-      - logs:${PM_DIR}/storage/logs:delegated
-      - public:${PM_DIR}/public:delegated
+      - compiled-classes:${PM_DIR}/bootstrap/cache
+      - compiled-facades:${PM_DIR}/storage/framework/cache
+      - compiled-views:${PM_DIR}/storage/framework/views
+      - logs:${PM_DIR}/storage/logs
+      - public:${PM_DIR}/public
     links:
       - redis
     depends_on:
@@ -120,6 +116,7 @@ services:
       - ${PM_BROADCASTER_PORT}:6001
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+      - '${PM_DOMAIN}:host-gateway'
     dns:
       - 1.1.1.1
       - 1.0.0.1
@@ -144,17 +141,18 @@ services:
       - processmaker
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
+      - persistent-build:${PM_DIR}/storage/install
+      - ${PM_APP_SOURCE}/storage/build:${PM_DIR}/storage/build:consistent
+      - ${PM_APP_SOURCE}:${PM_DIR}
       - node-modules:${PM_DIR}/node_modules
       - composer-vendor:${PM_DIR}/vendor
       - app-storage:${PM_DIR}/storage/app:consistent
-      - build:${PM_DIR}/storage/build:consistent
-      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
-      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
-      - compiled-views:${PM_DIR}/storage/framework/views:delegated
-      - logs:${PM_DIR}/storage/logs:delegated
-      - public:${PM_DIR}/public:delegated
+      - compiled-classes:${PM_DIR}/bootstrap/cache
+      - compiled-facades:${PM_DIR}/storage/framework/cache
+      - compiled-views:${PM_DIR}/storage/framework/views
+      - logs:${PM_DIR}/storage/logs
+      - public:${PM_DIR}/public
     links:
       - redis
     depends_on:
@@ -167,6 +165,7 @@ services:
     entrypoint: ["/usr/local/bin/queue-entrypoint"]
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+      - '${PM_DOMAIN}:host-gateway'
     dns:
       - 1.1.1.1
       - 1.0.0.1
@@ -194,29 +193,22 @@ services:
         GITHUB_OAUTH_TOKEN:
     env_file:
       - .env
-    environment:
-      - DB_HOSTNAME=${DB_HOST}
-      - DB_USERNAME=${DB_ROOT_USERNAME}
-      - DB_PASSWORD=${DB_ROOT_PASSWORD}
-      - DATA_DB_HOST=${DB_HOST}
-      - DATA_DB_USERNAME=${DB_ROOT_USERNAME}
-      - DATA_DB_PASSWORD=${DB_ROOT_PASSWORD}
-      - DATA_DB_PORT=${DB_PORT}
     networks:
       - processmaker
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages
+      - persistent-build:${PM_DIR}/storage/install
+      - ${PM_APP_SOURCE}/storage/build:${PM_DIR}/storage/build:consistent
+      - ${PM_APP_SOURCE}:${PM_DIR}
       - node-modules:${PM_DIR}/node_modules
       - composer-vendor:${PM_DIR}/vendor
       - app-storage:${PM_DIR}/storage/app:consistent
-      - build:${PM_DIR}/storage/build:consistent
-      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
-      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
-      - compiled-views:${PM_DIR}/storage/framework/views:delegated
-      - logs:${PM_DIR}/storage/logs:delegated
-      - public:${PM_DIR}/public:delegated
+      - compiled-classes:${PM_DIR}/bootstrap/cache
+      - compiled-facades:${PM_DIR}/storage/framework/cache
+      - compiled-views:${PM_DIR}/storage/framework/views
+      - logs:${PM_DIR}/storage/logs
+      - public:${PM_DIR}/public
     links:
       - redis
     depends_on:
@@ -241,8 +233,8 @@ volumes:
   compiled-facades: {}
   composer-vendor: {}
   node-modules: {}
+  persistent-build: {}
   public: {}
-  build: {}
   logs: {}
 networks:
   processmaker: {

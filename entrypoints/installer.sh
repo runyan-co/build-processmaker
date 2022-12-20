@@ -11,6 +11,23 @@
   }
 
   #
+  # clone a copy of the platform repo
+  #
+  cloneGitRepo() {
+    pm-cli output:header "Resetting git repo"
+    git restore .
+    git reset --hard HEAD^
+  }
+
+  #
+  # removes any unnecessary previous build information
+  #
+  cleanBuildFiles() {
+    rm -rf "$PM_DIR/storage/build/*"
+    rm -rf "$PM_DIR/storage/build/.*"
+  }
+
+  #
   # Installs ProcessMaker enterprise packages
   #
   installEnterprisePackages() {
@@ -29,7 +46,6 @@
 
       composer dumpautoload -o --no-ansi --no-interaction
       pm-cli output:header "Enterprise packages installed"
-
     else
       pm-cli output:header "Enterprise packages already installed"
     fi
@@ -42,14 +58,10 @@
     #
     # Create and link the .env file
     #
-    ENV_REALPATH=storage/build/.env
-
     pm-cli output:header "Setting up environment"
 
-    if [ ! -f "$ENV_REALPATH" ]; then
-      cp "$PM_SETUP_DIR/.env.example" "$ENV_REALPATH"
-    elif [ ! -L .env ]; then
-      rm .env && ln -s "$ENV_REALPATH" .env
+    if [ ! -f .env ]; then
+      cp "$PM_SETUP_DIR/.env.example" .env
     fi
 
     #
@@ -73,7 +85,15 @@
         echo "NODE_BIN_PATH=$(which node)"
         echo "PROCESSMAKER_SCRIPTS_DOCKER=$(which docker)"
         echo "PROCESSMAKER_SCRIPTS_HOME=${PM_DIR}/storage/app/scripts"
-      } >>"$ENV_REALPATH"
+        echo "DB_USERNAME=$DB_USERNAME"
+        echo "DB_HOST=$DB_HOST"
+        echo "DB_HOSTNAME=$DB_HOSTNAME"
+        echo "DB_PASSWORD=$DB_PASSWORD"
+        echo "DATA_DB_HOST=$DATA_DB_HOST"
+        echo "DATA_DB_USERNAME=$DATA_DB_USERNAME"
+        echo "DATA_DB_PASSWORD=$DATA_DB_PASSWORD"
+        echo "DATA_DB_PORT=$DATA_DB_PORT"
+      } >>.env
     fi
   }
 
@@ -89,22 +109,6 @@
   #
   copyEchoServerConfig() {
     cp "$PM_SETUP_DIR/laravel-echo-server.json" .
-  }
-
-  #
-  # Move composer files to storage, then link it
-  #
-  linkComposerFiles() {
-    for FILE in "composer.json" "composer.lock"; do
-      if [ ! -L "$FILE" ]; then
-        if [ -f "storage/build/$FILE" ]; then
-          rm -rf "storage/build/$FILE"
-        fi
-
-        mv "$FILE" storage/build
-        ln -s "storage/build/$FILE" .
-      fi
-    done
   }
 
   #
@@ -130,7 +134,6 @@
   installNpmDeps() {
     pm-cli output:header "Installing npm dependencies"
     npm clean-install --no-audit
-
     pm-cli output:header "Compiling npm assets"
     npm run dev --no-progress
     npm cache clear --force
@@ -143,20 +146,13 @@
     #
     # Setup configuration files
     #
-    linkComposerFiles
     copyEchoServerConfig
 
     #
     # Install deps in parallel
     #
-    installComposerDeps &
-    installNpmDeps &
-
-    #
-    # Wait for the deps to finish installing
-    # and for the assets to be compiled
-    #
-    wait;
+    installComposerDeps
+    installNpmDeps
 
     #
     # run the remaining artisan commands
@@ -188,9 +184,14 @@
   #
   installProcessMaker() {
     #
-    # Wait for MySQL to come online
+    # removes any unnecessary previous build information
     #
-    awaitMysql
+    cleanBuildFiles
+
+    #
+    # clone a fresh copy of the core repo
+    #
+    cloneGitRepo
 
     #
     # setup the environment
@@ -198,6 +199,11 @@
     if ! setupEnvironment; then
       pm-cli output:error "Could not setup environment" && exit 1
     fi
+
+    #
+    # Wait for MySQL to come online
+    #
+    awaitMysql
 
     #
     # install the app if we're in the web
@@ -208,18 +214,9 @@
     fi
 
     #
-    # install the ProcessMaker-specific enterprise packages, if desired
-    #
-    if [ -z "$PM_INSTALL_ENTERPRISE_PACKAGES" ] && [ "$PM_INSTALL_ENTERPRISE_PACKAGES" = true ]; then
-      if ! installEnterprisePackages; then
-        pm-cli output:error "Could not install enterprise packages" && exit 1
-      fi
-    fi
-
-    #
     # Mark as installed
     #
-    touch storage/build/.installed
+    touch storage/install/.installed && chmod 500 storage/install/.installed
   }
 
   #
@@ -236,7 +233,7 @@
     # a web service, then we need to run the
     # app's artisan install command
     #
-    if [ ! -f storage/build/.installed ]; then
+    if [ ! -f storage/install/.installed ]; then
       echo "" >storage/build/install.log
 
       if ! installProcessMaker | tee -a storage/build/install.log; then
