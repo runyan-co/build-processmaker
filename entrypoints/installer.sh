@@ -11,13 +11,30 @@
   }
 
   #
+  # create mysql users
+  #
+  createMysqlUsers() {
+    {
+      echo "CREATE USER 'web'@'%' IDENTIFIED BY 'web';"; \
+      echo "GRANT LOCK TABLES, SHOW DATABASES, CREATE TABLESPACE ON *.* TO 'web'@'%';"; \
+      echo "GRANT UPDATE, GRANT OPTION, DELETE, CREATE ROUTINE, EXECUTE, INSERT, REFERENCES, SELECT, INDEX, ALTER, SHOW VIEW, ALTER ROUTINE, LOCK TABLES, TRIGGER, EVENT, CREATE VIEW, DROP, CREATE, CREATE TEMPORARY TABLES ON processmaker.* TO 'web'@'%';"; \
+      echo "CREATE USER 'queue'@'%' IDENTIFIED BY 'queue';"; \
+      echo "GRANT LOCK TABLES, SHOW DATABASES, CREATE TABLESPACE ON *.* TO 'queue'@'%';"; \
+      echo "GRANT UPDATE, GRANT OPTION, DELETE, CREATE ROUTINE, EXECUTE, INSERT, REFERENCES, SELECT, INDEX, ALTER, SHOW VIEW, ALTER ROUTINE, LOCK TABLES, TRIGGER, EVENT, CREATE VIEW, DROP, CREATE, CREATE TEMPORARY TABLES ON processmaker.* TO 'queue'@'%';"; \
+      echo "FLUSH PRIVILEGES;";
+    } | mysql -P "$DB_PORT" -u "$DB_USERNAME" -h "$DB_HOST" -p"$DB_PASSWORD" "$DB_NAME"
+  }
+
+  #
   # Change to desired processmaker/processmaker version
   #
   switchProcessMakerVersion() {
     git restore .
     git clean -d -f
     git fetch origin "$PM_BRANCH"
+    git stash
     git checkout "$PM_BRANCH"
+    git pull
   }
 
   #
@@ -26,51 +43,22 @@
   installEnterprisePackages() {
     PM_PACKAGES_DOTFILE=storage/build/.packages
 
-    echo "";
-    echo "+----------------------------------------------------------"
-    echo "|"
-    echo "|    Installing enterprise packages";
-    echo "|"
-    echo "+----------------------------------------------------------"
-    echo "";
-
     if [ ! -f "$PM_PACKAGES_DOTFILE" ]; then
       for PACKAGE in $(pm-cli packages:list); do
         {
-          echo "";
-          echo "+----------------------------------------------------------"
-          echo "|"
-          echo "|    Installing processmaker/$PACKAGE";
-          echo "|"
-          echo "+----------------------------------------------------------"
-          echo "";
-
+          pm-cli output:header "Installing processmaker/$PACKAGE";
           composer require "processmaker/$PACKAGE" --quiet --no-ansi --no-plugins --no-interaction;
-
           php artisan "$PACKAGE:install" --no-ansi --no-interaction;
           php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction;
-
           echo "$PACKAGE" >>"$PM_PACKAGES_DOTFILE";
         }
       done
 
       composer dumpautoload -o --no-ansi --no-interaction
+      pm-cli output:header "Enterprise packages installed";
 
-      echo "";
-      echo "+----------------------------------------------------------"
-      echo "|"
-      echo "|    Enterprise packages installed";
-      echo "|"
-      echo "+----------------------------------------------------------"
-      echo "";
     else
-      echo "";
-      echo "+----------------------------------------------------------"
-      echo "|"
-      echo "|    Enterprise packages already installed";
-      echo "|"
-      echo "+----------------------------------------------------------"
-      echo "";
+      pm-cli output:header "Enterprise packages already installed";
     fi
   }
 
@@ -83,13 +71,7 @@
     #
     ENV_REALPATH=storage/build/.env
 
-    echo "";
-    echo "+----------------------------------------------------------"
-    echo "|"
-    echo "|    Setting up environment";
-    echo "|"
-    echo "+----------------------------------------------------------"
-    echo "";
+    pm-cli output:header "Setting up environment";
 
     if [ ! -f "$ENV_REALPATH" ]; then
       cp "$PM_SETUP_DIR/.env.example" "$ENV_REALPATH"
@@ -100,9 +82,18 @@
     #
     # Make sure these are defined for use in the .env
     #
-    if ! grep "APP_URL=http://${PM_DOMAIN}:${PM_APP_PORT}" < .env; then
+    if ! grep "APP_URL=http://${PM_DOMAIN}" < .env; then
+      #
+      # append the port to the app url if it's not port 80
+      #
+      if [ "$PM_APP_PORT" = 80 ] || [ "$PM_APP_PORT" = "80" ]; then
+        PM_APP_URL_WITH_PORT="http://${PM_DOMAIN}"
+      else
+        PM_APP_URL_WITH_PORT="http://${PM_DOMAIN}:${PM_APP_PORT}"
+      fi
+
       {
-        echo "APP_URL=http://${PM_DOMAIN}:${PM_APP_PORT}"
+        echo "APP_URL=$PM_APP_URL_WITH_PORT"
         echo "BROADCASTER_HOST=http://${PM_DOMAIN}:${PM_BROADCASTER_PORT}"
         echo "SESSION_DOMAIN=${PM_DOMAIN}"
         echo "HOME=${PM_DIR}"
@@ -147,13 +138,7 @@
   # Install app's composer dependencies
   #
   installComposerDeps() {
-    echo "";
-    echo "+----------------------------------------------------------";
-    echo "|";
-    echo "|    Installing composer dependencies";
-    echo "|";
-    echo "+----------------------------------------------------------";
-    echo "";
+    pm-cli output:header "Installing composer dependencies";
 
     composer install \
       --no-progress \
@@ -170,24 +155,10 @@
   # Install app's npm dependencies
   #
   installNpmDeps() {
-    echo "";
-    echo "+----------------------------------------------------------"
-    echo "|"
-    echo "|    Installing npm dependencies";
-    echo "|"
-    echo "+----------------------------------------------------------"
-    echo "";
-
+    pm-cli output:header "Installing npm dependencies";
     npm clean-install --no-audit
 
-    echo "";
-    echo "+----------------------------------------------------------"
-    echo "|"
-    echo "|    Compiling npm assets";
-    echo "|"
-    echo "+----------------------------------------------------------"
-    echo "";
-
+    pm-cli output:header "Compiling npm assets";
     npm run dev --no-progress
     npm cache clear --force
   }
@@ -235,7 +206,7 @@
   # Wait for MySQL to come online
   #
   awaitMysql() {
-    until mysqladmin ping -u root -ppassword -h mysql >/dev/null 2>&1; do
+    until mysqladmin ping -u "$DB_USERNAME" -P "$DB_PORT" -p"$DB_PASSWORD" -h "$DB_HOST" >/dev/null 2>&1; do
       echo "Waiting for mysql..." && sleep 1
     done
   }
@@ -250,10 +221,15 @@
     awaitMysql
 
     #
+    # setup mysql users
+    #
+    createMysqlUsers
+
+    #
     # setup the environment
     #
     if ! setupEnvironment; then
-      echo "Could not setup environment" && exit 1
+      pm-cli output:error "Could not setup environment" && exit 1
     fi
 
     #
@@ -261,7 +237,7 @@
     # service container
     #
     if ! installApplication; then
-      echo "Could not install ProcessMaker" && exit 1
+      pm-cli output:error "Could not install ProcessMaker" && exit 1
     fi
 
     #
@@ -276,7 +252,7 @@
     #
     if [ "$PM_INSTALL_ENTERPRISE_PACKAGES" = true ]; then
       if ! installEnterprisePackages; then
-        echo "Could not install enterprise packages" && exit 1
+        pm-cli output:error "Could not install enterprise packages" && exit 1
       fi
     fi
 
@@ -300,7 +276,7 @@
     echo "" > storage/build/install.log
 
     if ! installProcessMaker | tee -a storage/build/install.log; then
-      echo "Install failed. See storage/build/install.log for details." && exit 1
+      pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1
     fi
   fi
 

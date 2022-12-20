@@ -45,14 +45,6 @@ ENV NVM_DIR                        /root/.nvm
 ENV PM_ENV                         .docker.env
 
 #
-# php-fpm limit defaults (these get written at entrypoint startup)
-#
-ENV FPM_PM_MAX_CHILDREN 20
-ENV FPM_PM_START_SERVERS 3
-ENV FPM_PM_MIN_SPARE_SERVERS 1
-ENV FPM_PM_MAX_SPARE_SERVERS 5
-
-#
 # debian package updates and installs
 #
 RUN apt-get update -y && \
@@ -108,20 +100,45 @@ ENV NODE_PATH "$NVM_DIR/versions/node/v$NODE_VERSION/lib/node_modules"
 ENV NPX_PATH /usr/local/bin/npx
 
 #
+# update sysctl config for better performance with php
+#
+RUN echo "DefaultLimitNOFILE=65536" >>/etc/systemd/system.conf && \
+    echo "session required pam_limits.so" >>/etc/pam.d/common-session && \
+    { \
+      echo "root soft nofile 65536"; \
+      echo "root hard nofile 65536"; \
+    } >>/etc/security/limits.conf && \
+    { \
+      echo net.ipv4.tcp_syncookies=1; \
+      echo net.ipv4.conf.all.rp_filter=1; \
+      echo net.ipv4.conf.all.secure_redirects=1; \
+      echo net.ipv4.conf.all.send_redirects=0; \
+      echo net.ipv4.conf.all.accept_source_route=0; \
+      echo net.ipv6.conf.all.accept_source_route=0; \
+      echo net.ipv4.icmp_echo_ignore_broadcasts=1; \
+      echo net.ipv4.tcp_timestamps=0; \
+      echo net.ipv4.tcp_mem=786432 1697152 1945728; \
+      echo net.ipv4.tcp_rmem=4096 4096 16777216; \
+      echo net.ipv4.tcp_wmem=4096 4096 16777216; \
+      echo net.core.rmem_max=16777216; \
+      echo net.core.wmem_max=16777216; \
+      echo net.ipv4.netfilter.ip_conntrack_max=999999; \
+      echo net.netfilter.nf_conntrack_max=999999; \
+      echo net.ipv4.tcp_tw_reuse=1; \
+      echo net.ipv4.tcp_max_orphans=262144; \
+      echo net.ipv4.ip_local_port_range=1000 65535; \
+      echo net.ipv4.tcp_fin_timeout=30; \
+      echo net.core.netdev_max_backlog=10000; \
+      echo net.core.somaxconn=60000; \
+      echo net.ipv4.tcp_synack_retries=3; \
+      echo fs.file-max=640000; \
+    } >>/etc/sysctl.conf && \
+    sysctl --system
+
+#
 # cron and nginx config
 #
 COPY stubs/cron/laravel-cron /etc/cron.d/laravel-cron
-
-RUN chmod 0644 /etc/cron.d/laravel-cron &&  \
-    crontab /etc/cron.d/laravel-cron && \
-    mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak && \
-    mkdir -p /var/log/nginx && \
-    touch /var/log/nginx/error.log
-
-#
-# nginx config
-#
-COPY stubs/nginx/nginx.conf /etc/nginx/nginx.conf
 
 #
 # supervisord
@@ -133,20 +150,22 @@ COPY stubs/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 #
 COPY stubs/php/8.1/cli/conf.d /etc/php/8.1/cli/conf.d
 COPY stubs/php/8.1/fpm/conf.d /etc/php/8.1/fpm/conf.d
+COPY stubs/php/8.1/fpm/pool.d/processmaker.conf /etc/php/8.1/fpm/pool.d/processmaker.conf
 
 #
-# Write the php-fpm config
+# ensure config files are setup properly
 #
-RUN { \
-  echo listen.owner = root; \
-  echo listen.group = root; \
-  echo ping.path = /ping; \
-  echo pm.status_path = /status; \
-  echo pm.max_children = "$FPM_PM_MAX_CHILDREN"; \
-  echo pm.start_servers = "$FPM_PM_START_SERVERS"; \
-  echo pm.min_spare_servers = "$FPM_PM_MIN_SPARE_SERVERS"; \
-  echo pm.max_spare_servers = "$FPM_PM_MAX_SPARE_SERVERS"; \
-} >>/etc/php/8.1/fpm/pool.d/www.conf
+RUN chmod 0644 /etc/cron.d/laravel-cron &&  \
+    crontab /etc/cron.d/laravel-cron && \
+    mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak && \
+    mkdir -p /var/log/nginx && \
+    touch /var/log/nginx/error.log && \
+    mv /etc/php/8.1/fpm/pool.d/www.conf /etc/php/8.1/fpm/pool.d/www.conf.bak
+
+#
+# nginx config
+#
+COPY stubs/nginx/nginx.conf /etc/nginx/nginx.conf
 
 #
 # Global composer config

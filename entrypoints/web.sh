@@ -12,9 +12,23 @@
     if [ ! -f storage/build/.env ]; then
       echo "App env file not found (env not ready)..."
       sleep 1 && exit 0
-    elif [ ! -f .env ]; then
-      ln -s storage/build/.env .env
     fi
+
+    #
+    # copy over the .env
+    #
+    rm .env && cp storage/build/.env .env
+
+    #
+    # add container-specific env variables
+    # to the app .env file
+    #
+    {
+      echo "DB_USERNAME=$DB_USERNAME";
+      echo "DB_PASSWORD=$DB_PASSWORD";
+      echo "DATA_DB_USERNAME=$DB_USERNAME";
+      echo "DATA_DB_PASSWORD=$DB_PASSWORD";
+    } >>.env
 
     #
     # Check for the app composer.json
@@ -58,5 +72,6 @@
 
   #
   # 3. Run the entrypoint command
+  #
   bash -c 'NPX_BINARY="$(which npx)" supervisord --nodaemon'
 }
