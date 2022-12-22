@@ -26,6 +26,19 @@ class GetEnterprisePackages extends Command
     protected $description = 'List all enterprise packages in the correct, installable order';
 
     /**
+     * Get the home directory for the ProcessMaker install
+     *
+     * @return string
+     *
+     * @throws \DomainException
+     */
+    public function getProcessMakerHome() {
+        return config('app.pm-directory')
+            ?: $this->option('dir')
+            ?? throw new DomainException('Path to processmaker platform not defined');
+    }
+
+    /**
      * Execute the console command.
      *
      * @return void
@@ -33,11 +46,7 @@ class GetEnterprisePackages extends Command
      */
     public function handle(): void
     {
-        $PM_DIR = config('app.pm-directory')
-            ?: $this->option('dir')
-            ?? throw new DomainException('Path to processmaker platform not defined');
-
-        $composer_json = $this->getComposerJson($PM_DIR);
+        $composer_json = $this->getComposerJson($this->getProcessMakerHome());
 
         // Sort and remove these packages with the corresponding name
         // found in the array. This way we can prepend them later

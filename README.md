@@ -19,7 +19,7 @@ PM_BRANCH=
 PM_IMAGE_NAME=
 # Instructs the installer service whether or not to 
 # install the enterprise packages
-PM_INSTALL_ENTERPRISE_PACKAGES=true
+INSTALL_ENTERPRISE_PACKAGES=true
 # Absolute path to the ProcessMaker directory in the 
 # containers. You very likely will NOT need to change this
 PM_DIR=/var/www/html

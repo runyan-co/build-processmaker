@@ -28,26 +28,30 @@ services:
     env_file:
       - .env
     environment:
-      - DB_USERNAME=${DB_ROOT_USERNAME}
-      - DB_PASSWORD=${DB_ROOT_PASSWORD}
-      - DATA_DB_USERNAME=${DB_ROOT_USERNAME}
-      - DATA_DB_PASSWORD=${DB_ROOT_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_HOSTNAME=${DB_HOST}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=3306
     volumes:
+      - build:${PM_DIR}/storage/build:consistent
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
-      - ${PM_APP_SOURCE}/node_modules:${PM_DIR}/node_modules:consistent
-      - ${PM_APP_SOURCE}/vendor:${PM_DIR}/vendor:consistent
+      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
       - app-storage:${PM_DIR}/storage/app:consistent
-      - build:${PM_DIR}/storage/build:consistent
-      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
-      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
-      - compiled-views:${PM_DIR}/storage/framework/views:delegated
       - logs:${PM_DIR}/storage/logs:delegated
+      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
+      - compiled-views:${PM_DIR}/storage/framework/views:delegated
+      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
+      - node-modules:${PM_DIR}/node_modules:delegated
+      - composer-vendor:${PM_DIR}/vendor:delegated
       - public:${PM_DIR}/public:delegated
     links:
+      - mysql
       - redis
     depends_on:
+      - mysql
       - redis
   web:
     image: processmaker:${PM_IMAGE_NAME}
@@ -67,11 +71,6 @@ services:
       - 0.0.0.0
     env_file:
       - .env
-    environment:
-      - DB_USERNAME=web
-      - DB_PASSWORD=web
-      - DATA_DB_USERNAME=web
-      - DATA_DB_PASSWORD=web
     build:
       context: .
       args:
@@ -89,21 +88,23 @@ services:
     ports:
       - ${PM_APP_PORT}:80
     volumes:
+      - build:${PM_DIR}/storage/build:consistent
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
-      - ${PM_APP_SOURCE}/node_modules:${PM_DIR}/node_modules:consistent
-      - ${PM_APP_SOURCE}/vendor:${PM_DIR}/vendor:consistent
+      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
       - app-storage:${PM_DIR}/storage/app:consistent
-      - build:${PM_DIR}/storage/build:consistent
-      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
-      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
-      - compiled-views:${PM_DIR}/storage/framework/views:delegated
       - logs:${PM_DIR}/storage/logs:delegated
+      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
+      - compiled-views:${PM_DIR}/storage/framework/views:delegated
+      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
+      - node-modules:${PM_DIR}/node_modules:delegated
+      - composer-vendor:${PM_DIR}/vendor:delegated
       - public:${PM_DIR}/public:delegated
     links:
+      - mysql
       - redis
     depends_on:
+      - mysql
       - redis
       - installer
   echo:
@@ -137,21 +138,23 @@ services:
     networks:
       - processmaker
     volumes:
+      - build:${PM_DIR}/storage/build:consistent
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
-      - ${PM_APP_SOURCE}/node_modules:${PM_DIR}/node_modules:consistent
-      - ${PM_APP_SOURCE}/vendor:${PM_DIR}/vendor:consistent
+      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
       - app-storage:${PM_DIR}/storage/app:consistent
-      - build:${PM_DIR}/storage/build:consistent
-      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
-      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
-      - compiled-views:${PM_DIR}/storage/framework/views:delegated
       - logs:${PM_DIR}/storage/logs:delegated
+      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
+      - compiled-views:${PM_DIR}/storage/framework/views:delegated
+      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
+      - node-modules:${PM_DIR}/node_modules:delegated
+      - composer-vendor:${PM_DIR}/vendor:delegated
       - public:${PM_DIR}/public:delegated
     links:
+      - mysql
       - redis
     depends_on:
+      - mysql
       - redis
       - installer
       - web
@@ -188,31 +191,44 @@ services:
         GITHUB_OAUTH_TOKEN:
     env_file:
       - .env
-    environment:
-      - DB_USERNAME=queue
-      - DB_PASSWORD=queue
-      - DATA_DB_USERNAME=queue
-      - DATA_DB_PASSWORD=queue
     networks:
       - processmaker
     volumes:
+      - build:${PM_DIR}/storage/build:consistent
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
-      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
-      - ${PM_APP_SOURCE}/node_modules:${PM_DIR}/node_modules:consistent
-      - ${PM_APP_SOURCE}/vendor:${PM_DIR}/vendor:consistent
+      - ${PM_APP_SOURCE}:${PM_DIR}:delegated
       - app-storage:${PM_DIR}/storage/app:consistent
-      - build:${PM_DIR}/storage/build:consistent
-      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
-      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
-      - compiled-views:${PM_DIR}/storage/framework/views:delegated
       - logs:${PM_DIR}/storage/logs:delegated
+      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
+      - compiled-views:${PM_DIR}/storage/framework/views:delegated
+      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
+      - node-modules:${PM_DIR}/node_modules:delegated
+      - composer-vendor:${PM_DIR}/vendor:delegated
       - public:${PM_DIR}/public:delegated
     links:
+      - mysql
       - redis
     depends_on:
+      - mysql
       - redis
       - installer
+  mysql:
+    image: mysql:8
+    restart: on-failure
+    healthcheck:
+      test: mysqladmin ping -u ${DB_USERNAME} -p${DB_PASSWORD} -h ${DB_HOST}
+      interval: 15s
+      timeout: 5s
+    networks:
+      - processmaker
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: processmaker
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - mysql-data:/var/lib/mysql
   redis:
     image: redis:7
     restart: on-failure
@@ -226,6 +242,7 @@ services:
       - redis-data:/data
 volumes:
   app-storage: {}
+  mysql-data: {}
   redis-data: {}
   compiled-views: {}
   compiled-classes: {}

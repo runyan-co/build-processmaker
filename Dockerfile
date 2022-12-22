@@ -104,10 +104,8 @@ ENV NPX_PATH /usr/local/bin/npx
 #
 RUN echo "DefaultLimitNOFILE=65536" >>/etc/systemd/system.conf && \
     echo "session required pam_limits.so" >>/etc/pam.d/common-session && \
-    { \
-      echo "root soft nofile 65536"; \
-      echo "root hard nofile 65536"; \
-    } >>/etc/security/limits.conf && \
+    echo "root soft nofile 65536" >>/etc/security/limits.conf && \
+    echo "root hard nofile 65536" >>/etc/security/limits.conf && \
     { \
       echo net.ipv4.tcp_syncookies=1; \
       echo net.ipv4.conf.all.rp_filter=1; \
@@ -132,8 +130,7 @@ RUN echo "DefaultLimitNOFILE=65536" >>/etc/systemd/system.conf && \
       echo net.core.somaxconn=60000; \
       echo net.ipv4.tcp_synack_retries=3; \
       echo fs.file-max=640000; \
-    } >>/etc/sysctl.conf && \
-    sysctl --system
+    } >>/etc/sysctl.conf && sysctl --system
 
 #
 # cron and nginx config

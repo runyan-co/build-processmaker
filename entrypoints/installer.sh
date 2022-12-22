@@ -2,6 +2,13 @@
 
 {
   #
+  # Define this for use later
+  #
+  if [ -n "$INSTALL_ENTERPRISE_PACKAGES" ]; then
+    INSTALL_ENTERPRISE_PACKAGES=true
+  fi
+
+  #
   # Source a few necessary env variables
   #
   sourceDockerEnv() {
@@ -11,54 +18,40 @@
   }
 
   #
-  # create mysql users
-  #
-  createMysqlUsers() {
-    {
-      echo "CREATE USER 'web'@'%' IDENTIFIED BY 'web';"; \
-      echo "GRANT LOCK TABLES, SHOW DATABASES, CREATE TABLESPACE ON *.* TO 'web'@'%';"; \
-      echo "GRANT UPDATE, GRANT OPTION, DELETE, CREATE ROUTINE, EXECUTE, INSERT, REFERENCES, SELECT, INDEX, ALTER, SHOW VIEW, ALTER ROUTINE, LOCK TABLES, TRIGGER, EVENT, CREATE VIEW, DROP, CREATE, CREATE TEMPORARY TABLES ON processmaker.* TO 'web'@'%';"; \
-      echo "CREATE USER 'queue'@'%' IDENTIFIED BY 'queue';"; \
-      echo "GRANT LOCK TABLES, SHOW DATABASES, CREATE TABLESPACE ON *.* TO 'queue'@'%';"; \
-      echo "GRANT UPDATE, GRANT OPTION, DELETE, CREATE ROUTINE, EXECUTE, INSERT, REFERENCES, SELECT, INDEX, ALTER, SHOW VIEW, ALTER ROUTINE, LOCK TABLES, TRIGGER, EVENT, CREATE VIEW, DROP, CREATE, CREATE TEMPORARY TABLES ON processmaker.* TO 'queue'@'%';"; \
-      echo "FLUSH PRIVILEGES;";
-    } | mysql -P "$DB_PORT" -u "$DB_USERNAME" -h "$DB_HOST" -p"$DB_PASSWORD" "$DB_NAME"
-  }
-
-  #
-  # Change to desired processmaker/processmaker version
-  #
-  switchProcessMakerVersion() {
-    git restore .
-    git clean -d -f
-    git fetch origin "$PM_BRANCH"
-    git stash
-    git checkout "$PM_BRANCH"
-    git pull
-  }
-
-  #
   # Installs ProcessMaker enterprise packages
   #
   installEnterprisePackages() {
-    PM_PACKAGES_DOTFILE=storage/build/.packages
+    PACKAGES_DOTFILE=storage/build/.packages
 
-    if [ ! -f "$PM_PACKAGES_DOTFILE" ]; then
+    if [ ! -f "$PACKAGES_DOTFILE" ]; then
       for PACKAGE in $(pm-cli packages:list); do
         {
-          pm-cli output:header "Installing processmaker/$PACKAGE";
-          composer require "processmaker/$PACKAGE" --quiet --no-ansi --no-plugins --no-interaction;
-          php artisan "$PACKAGE:install" --no-ansi --no-interaction;
-          php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction;
-          echo "$PACKAGE" >>"$PM_PACKAGES_DOTFILE";
+          # Let the user know which package is
+          # being installed
+          pm-cli output:header "Installing processmaker/$PACKAGE"
+
+          # Use composer to require the package
+          # we want to install
+          composer require "processmaker/$PACKAGE" --quiet --no-ansi --no-plugins --no-interaction
+
+          # Run the related artisan install command
+          # the package provides
+          php artisan "$PACKAGE:install" --no-ansi --no-interaction
+
+          # Publish any assets or files the package provides
+          php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction
+
+          # Add the installed package to our
+          # build dotfile for safekeeping
+          echo "$PACKAGE" >>"$PACKAGES_DOTFILE"
         }
       done
 
       composer dumpautoload -o --no-ansi --no-interaction
-      pm-cli output:header "Enterprise packages installed";
+      pm-cli output:header "Enterprise packages installed"
 
     else
-      pm-cli output:header "Enterprise packages already installed";
+      pm-cli output:header "Enterprise packages already installed"
     fi
   }
 
@@ -66,42 +59,58 @@
   # setup the .env file(s)
   #
   setupEnvironment() {
+    ENV_REALPATH=storage/build/.env
+
     #
     # Create and link the .env file
     #
-    ENV_REALPATH=storage/build/.env
-
-    pm-cli output:header "Setting up environment";
+    pm-cli output:header "Setting up environment"
 
     if [ ! -f "$ENV_REALPATH" ]; then
+      echo "Copying env setup file to build folder"
       cp "$PM_SETUP_DIR/.env.example" "$ENV_REALPATH"
-    elif [ ! -L .env ]; then
-      ln -s "$ENV_REALPATH" .env
+    fi
+
+    if [ -f .env ]; then
+      echo "Removing default .env file"
+      rm -f .env
+    fi
+
+    echo "Copying env file to app directory"
+    cp "$ENV_REALPATH" .
+
+    #
+    # append the port to the app url if it's not port 80
+    #
+    if [ "$PM_APP_PORT" = 80 ] || [ "$PM_APP_PORT" = "80" ]; then
+      PM_APP_URL_WITH_PORT="http://${PM_DOMAIN}"
+    else
+      PM_APP_URL_WITH_PORT="http://${PM_DOMAIN}:${PM_APP_PORT}"
     fi
 
     #
     # Make sure these are defined for use in the .env
     #
-    if ! grep "APP_URL=http://${PM_DOMAIN}" < .env; then
-      #
-      # append the port to the app url if it's not port 80
-      #
-      if [ "$PM_APP_PORT" = 80 ] || [ "$PM_APP_PORT" = "80" ]; then
-        PM_APP_URL_WITH_PORT="http://${PM_DOMAIN}"
-      else
-        PM_APP_URL_WITH_PORT="http://${PM_DOMAIN}:${PM_APP_PORT}"
-      fi
-
-      {
-        echo "APP_URL=$PM_APP_URL_WITH_PORT"
-        echo "BROADCASTER_HOST=http://${PM_DOMAIN}:${PM_BROADCASTER_PORT}"
-        echo "SESSION_DOMAIN=${PM_DOMAIN}"
-        echo "HOME=${PM_DIR}"
-        echo "NODE_BIN_PATH=$(which node)"
-        echo "PROCESSMAKER_SCRIPTS_DOCKER=$(which docker)"
-        echo "PROCESSMAKER_SCRIPTS_HOME=${PM_DIR}/storage/app/scripts"
-      } >>"$ENV_REALPATH"
-    fi
+    {
+      echo "APP_URL=${PM_APP_URL_WITH_PORT}";
+      echo "BROADCASTER_HOST=http://${PM_DOMAIN}:${PM_BROADCASTER_PORT}";
+      echo "SESSION_DOMAIN=${PM_DOMAIN}";
+      echo "HOME=${PM_DIR}";
+      echo "NODE_BIN_PATH=$(which node)";
+      echo "PROCESSMAKER_SCRIPTS_DOCKER=$(which docker)";
+      echo "PROCESSMAKER_SCRIPTS_HOME=${PM_DIR}/storage/app/scripts";
+      echo "DB_HOST=${DB_HOST}";
+      echo "DB_PORT=${DB_PORT}";
+      echo "DB_HOSTNAME=${DB_HOST}";
+      echo "DB_NAME=${DB_NAME}";
+      echo "DB_USERNAME=${DB_USERNAME}";
+      echo "DB_PASSWORD=${DB_PASSWORD}";
+      echo "DATA_DB_HOST=${DB_HOST}";
+      echo "DATA_DB_USERNAME=${DB_USERNAME}";
+      echo "DATA_DB_PASSWORD=${DB_PASSWORD}";
+      echo "DATA_DB_PORT=${DB_PORT}";
+      echo "DATA_DB_NAME=${DB_NAME}";
+    } >>"$ENV_REALPATH"
   }
 
   #
@@ -119,26 +128,10 @@
   }
 
   #
-  # Move composer files to storage, then link it
-  #
-  linkComposerFiles() {
-    for FILE in "composer.json" "composer.lock"; do
-      if [ ! -L "$FILE" ]; then
-        if [ -f "storage/build/$FILE" ]; then
-          rm -rf "storage/build/$FILE"
-        fi
-
-        mv "$FILE" storage/build
-        ln -s "storage/build/$FILE" .
-      fi
-    done;
-  }
-
-  #
   # Install app's composer dependencies
   #
   installComposerDeps() {
-    pm-cli output:header "Installing composer dependencies";
+    pm-cli output:header "Installing composer dependencies"
 
     composer install \
       --no-progress \
@@ -155,10 +148,15 @@
   # Install app's npm dependencies
   #
   installNpmDeps() {
-    pm-cli output:header "Installing npm dependencies";
+    pm-cli output:header "Installing npm dependencies"
     npm clean-install --no-audit
+  }
 
-    pm-cli output:header "Compiling npm assets";
+  #
+  # Compile the npm assets
+  #
+  compileNpmAssets() {
+    pm-cli output:header "Compiling npm assets"
     npm run dev --no-progress
     npm cache clear --force
   }
@@ -168,33 +166,41 @@
   #
   installApplication() {
     #
-    # Cleanup
-    #
-    switchProcessMakerVersion
-
-    #
     # Setup configuration files
     #
-    linkComposerFiles
-    copyEchoServerConfig
+    if ! copyEchoServerConfig; then
+      pm-cli output:error "Error when trying to copy laravel echo server config" && exit 1
+    fi
 
     #
-    # Install deps in parallel
+    # Install composer dependencies
     #
-    installComposerDeps &
-    installNpmDeps &
+    if ! installComposerDeps; then
+      pm-cli output:error "Error while installing composer dependencies" && exit 1
+    fi
 
     #
-    # Wait for the deps to finish installing
-    # and for the assets to be compiled
+    # Install npm dependencies
     #
-    wait;
+    if ! installNpmDeps; then
+      pm-cli output:error "Error while installing npm dependencies" && exit 1
+    fi
 
+    #
+    # Compile npm assets
+    #
+    if ! compileNpmAssets; then
+      pm-cli output:error "Error while comping npm assets" && exit 1
+    fi
+
+    #
+    # Run the remaining artisan commands to
+    # finish the base installation
+    #
     php artisan key:generate --no-interaction --no-ansi
     php artisan package:discover --no-interaction --no-ansi
     php artisan horizon:publish --no-interaction --no-ansi
     php artisan telescope:publish --force --no-interaction --no-ansi
-    php artisan db:wipe --no-interaction --no-ansi
     php artisan migrate:fresh --force --no-interaction --no-ansi
     php artisan db:seed --force --no-interaction --no-ansi
     php artisan passport:install --no-interaction --no-ansi
@@ -221,11 +227,6 @@
     awaitMysql
 
     #
-    # setup mysql users
-    #
-    createMysqlUsers
-
-    #
     # setup the environment
     #
     if ! setupEnvironment; then
@@ -241,20 +242,18 @@
     fi
 
     #
-    # Make sure this is defined
-    #
-    if [ -n "$PM_INSTALL_ENTERPRISE_PACKAGES" ]; then
-      export PM_INSTALL_ENTERPRISE_PACKAGES=true
-    fi
-
-    #
     # install the ProcessMaker-specific enterprise packages, if desired
     #
-    if [ "$PM_INSTALL_ENTERPRISE_PACKAGES" = true ]; then
+    if [ "$INSTALL_ENTERPRISE_PACKAGES" = true ]; then
       if ! installEnterprisePackages; then
         pm-cli output:error "Could not install enterprise packages" && exit 1
       fi
     fi
+
+    #
+    # Cache the configuration
+    #
+    php artisan config:cache --no-ansi --no-interaction
 
     #
     # Mark as installed
@@ -263,22 +262,36 @@
   }
 
   #
-  # Source a few necessary env variables
+  # ProcessMaker installation status
   #
-  sourceDockerEnv
-
-  #
-  # If we don't find a linked .env file and this is
-  # a web service, then we need to run the
-  # app's artisan install command
-  #
-  if [ ! -f storage/build/.installed ]; then
-    echo "" > storage/build/install.log
-
-    if ! installProcessMaker | tee -a storage/build/install.log; then
-      pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1
+  isInstalled() {
+    if [ -f storage/build/.installed ]; then
+      return 0
+    else
+      return 1
     fi
-  fi
+  }
 
-  exec "$@"
+  #
+  # entrypoint function
+  #
+  entrypoint() {
+    #
+    # Source a few necessary env variables
+    #
+    sourceDockerEnv
+
+    #
+    # If we don't find a linked .env file and this is
+    # a web service, then we need to run the
+    # app's artisan install command
+    #
+    if ! isInstalled; then
+      if ! installProcessMaker | tee -a storage/build/install.log; then
+        pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1
+      fi
+    fi
+  }
+
+  entrypoint && exec "$@"
 }
