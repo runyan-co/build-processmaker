@@ -229,6 +229,7 @@ services:
       MYSQL_ROOT_PASSWORD: password
     volumes:
       - mysql-data:/var/lib/mysql
+      - ${PM_BUILD_SOURCE}/stubs/mysql:/etc/mysql/conf.d:ro
   redis:
     image: redis:7
     restart: on-failure
