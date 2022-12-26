@@ -18,6 +18,34 @@
   }
 
   #
+  # restore public dir
+  #
+  restorePublicDirectory() {
+    git restore ./public
+  }
+
+  #
+  # restore app-specific storage dir
+  #
+  restoreAppStorage() {
+    git restore ./storage/app
+  }
+
+  #
+  # empty the ./vendor directory
+  #
+  emptyVendorDir() {
+    [ -d ./vendor ] && rm -rf ./vendor/*
+  }
+
+  #
+  # empty the ./node_modules directory
+  #
+  emptyNodeModulesDir() {
+    [ -d ./node_modules ] && rm -rf ./node_modules/*
+  }
+
+  #
   # Installs ProcessMaker enterprise packages
   #
   installEnterprisePackages() {
@@ -71,14 +99,6 @@
       cp "$PM_SETUP_DIR/.env.example" "$ENV_REALPATH"
     fi
 
-    if [ -f .env ]; then
-      echo "Removing default .env file"
-      rm -f .env
-    fi
-
-    echo "Copying env file to app directory"
-    cp "$ENV_REALPATH" .
-
     #
     # append the port to the app url if it's not port 80
     #
@@ -111,6 +131,12 @@
       echo "DATA_DB_PORT=${DB_PORT}";
       echo "DATA_DB_NAME=${DB_NAME}";
     } >>"$ENV_REALPATH"
+
+    if [ -f .env ]; then
+      echo "Removing default .env file" && rm -f .env
+    fi
+
+    echo "Copying env file to app directory" && cp "$ENV_REALPATH" .
   }
 
   #
@@ -218,6 +244,18 @@
   }
 
   #
+  # restore directories which were
+  # emptied when persisted volumes
+  # were mounted
+  #
+  restoreDirectories() {
+    restorePublicDirectory;
+    restoreAppStorage;
+    emptyVendorDir;
+    emptyNodeModulesDir;
+  }
+
+  #
   # Install steps
   #
   installProcessMaker() {
@@ -225,6 +263,13 @@
     # Wait for MySQL to come online
     #
     awaitMysql
+
+    #
+    # commands to restore directories
+    # replaced by persisted volumes
+    # when initialized
+    #
+    restoreDirectories
 
     #
     # setup the environment
@@ -287,6 +332,9 @@
     # app's artisan install command
     #
     if ! isInstalled; then
+      #
+      # Run the installation commands
+      #
       if ! installProcessMaker | tee -a storage/build/install.log; then
         pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1
       fi

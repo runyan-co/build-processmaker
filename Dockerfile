@@ -233,11 +233,13 @@ COPY entrypoints/web.sh /usr/local/bin/web-entrypoint
 COPY entrypoints/queue.sh /usr/local/bin/queue-entrypoint
 COPY entrypoints/installer.sh /usr/local/bin/installer-entrypoint
 COPY entrypoints/echo.sh /usr/local/bin/echo-entrypoint
+COPY entrypoints/jumpbox.sh /usr/local/bin/jumpbox-entrypoint
 
 RUN chmod +x /usr/local/bin/web-entrypoint && \
     chmod +x /usr/local/bin/queue-entrypoint && \
     chmod +x /usr/local/bin/installer-entrypoint && \
-    chmod +x /usr/local/bin/echo-entrypoint
+    chmod +x /usr/local/bin/echo-entrypoint && \
+    chmod +x /usr/local/bin/jumpbox-entrypoint
 
 WORKDIR $PM_DIR
 
