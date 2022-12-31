@@ -173,15 +173,9 @@
   #
   # Install app's npm dependencies
   #
-  installNpmDeps() {
+  npmInstallAndBuild() {
     pm-cli output:header "Installing npm dependencies"
     npm clean-install --no-audit
-  }
-
-  #
-  # Compile the npm assets
-  #
-  compileNpmAssets() {
     pm-cli output:header "Compiling npm assets"
     npm run dev --no-progress
     npm cache clear --force
@@ -206,17 +200,10 @@
     fi
 
     #
-    # Install npm dependencies
+    # Install npm dependencies and run build
     #
-    if ! installNpmDeps; then
-      pm-cli output:error "Error while installing npm dependencies" && exit 1
-    fi
-
-    #
-    # Compile npm assets
-    #
-    if ! compileNpmAssets; then
-      pm-cli output:error "Error while comping npm assets" && exit 1
+    if ! npmInstallAndBuild; then
+      pm-cli output:error "Error while installing npm dependencies or building assets" && exit 1
     fi
 
     #

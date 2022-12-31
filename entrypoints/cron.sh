@@ -26,6 +26,16 @@
   }
 
   #
+  # loop every 60 sec instead of using cron
+  #
+  runArtisanSchedule() {
+    while true; do
+      bash -c '"$PHP_BINARY" "artisan" schedule:run --no-interaction --no-ansi'
+      sleep 60
+    done;
+  }
+
+  #
   # 1. Wait for the .env file (the installer service will place it
   #    in the storage:/var/www/html-/storage/keys directory)
   awaitInstallation
@@ -38,5 +48,5 @@
   #
   # 3. Run the entrypoint command
   #
-  bash -c 'nginx'
+  runArtisanSchedule
 }

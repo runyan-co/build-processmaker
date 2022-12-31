@@ -1,11 +1,10 @@
 # syntax=docker/dockerfile:1
 FROM ubuntu:22.04
-MAINTAINER "Alex Runyan <alex@runyan.co>"
 
 #
 # Set bash as the default shell
 #
-SHELL ["/bin/bash", "-c"]
+SHELL ["/bin/bash", "-oeux", "pipefail", "-c"]
 
 #
 # work in the temp dir to keep the image size low
@@ -58,7 +57,7 @@ RUN apt-get update -y && \
     apt-get install -y --force-yes \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-            time nginx cron supervisor vim htop curl git zip unzip wget mysql-client \
+            time nginx vim htop curl git zip unzip wget mysql-client \
             pkg-config gcc g++ libmcrypt4 libpcre3-dev make python3 python3-pip whois acl \
             libpng-dev libmagickwand-dev libpcre2-dev jq net-tools build-essential \
             php8.1 php8.1-fpm php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd \
@@ -107,41 +106,7 @@ RUN echo "DefaultLimitNOFILE=65536" >>/etc/systemd/system.conf && \
     echo "session required pam_limits.so" >>/etc/pam.d/common-session && \
     echo "root soft nofile 65536" >>/etc/security/limits.conf && \
     echo "root hard nofile 65536" >>/etc/security/limits.conf && \
-    { \
-      echo net.ipv4.tcp_syncookies=1; \
-      echo net.ipv4.conf.all.rp_filter=1; \
-      echo net.ipv4.conf.all.secure_redirects=1; \
-      echo net.ipv4.conf.all.send_redirects=0; \
-      echo net.ipv4.conf.all.accept_source_route=0; \
-      echo net.ipv6.conf.all.accept_source_route=0; \
-      echo net.ipv4.icmp_echo_ignore_broadcasts=1; \
-      echo net.ipv4.tcp_timestamps=0; \
-      echo net.ipv4.tcp_mem=786432 1697152 1945728; \
-      echo net.ipv4.tcp_rmem=4096 4096 16777216; \
-      echo net.ipv4.tcp_wmem=4096 4096 16777216; \
-      echo net.core.rmem_max=16777216; \
-      echo net.core.wmem_max=16777216; \
-      echo net.ipv4.netfilter.ip_conntrack_max=999999; \
-      echo net.netfilter.nf_conntrack_max=999999; \
-      echo net.ipv4.tcp_tw_reuse=1; \
-      echo net.ipv4.tcp_max_orphans=262144; \
-      echo net.ipv4.ip_local_port_range=1000 65535; \
-      echo net.ipv4.tcp_fin_timeout=30; \
-      echo net.core.netdev_max_backlog=10000; \
-      echo net.core.somaxconn=60000; \
-      echo net.ipv4.tcp_synack_retries=3; \
-      echo fs.file-max=640000; \
-    } >>/etc/sysctl.conf && sysctl --system
-
-#
-# cron and nginx config
-#
-COPY stubs/cron/laravel-cron /etc/cron.d/laravel-cron
-
-#
-# supervisord
-#
-COPY stubs/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+    sysctl --system
 
 #
 # copy php config files
@@ -153,9 +118,7 @@ COPY stubs/php/8.1/fpm/pool.d/processmaker.conf /etc/php/8.1/fpm/pool.d/processm
 #
 # ensure config files are setup properly
 #
-RUN chmod 0644 /etc/cron.d/laravel-cron &&  \
-    crontab /etc/cron.d/laravel-cron && \
-    mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak && \
+RUN mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak && \ 
     mkdir -p /var/log/nginx && \
     touch /var/log/nginx/error.log && \
     mv /etc/php/8.1/fpm/pool.d/www.conf /etc/php/8.1/fpm/pool.d/www.conf.bak
@@ -230,16 +193,19 @@ RUN rm -f "$PM_ENV" && \
 # container entrypoints
 #
 COPY entrypoints/web.sh /usr/local/bin/web-entrypoint
+COPY entrypoints/php-fpm.sh /usr/local/bin/php-fpm-entrypoint
 COPY entrypoints/queue.sh /usr/local/bin/queue-entrypoint
 COPY entrypoints/installer.sh /usr/local/bin/installer-entrypoint
 COPY entrypoints/echo.sh /usr/local/bin/echo-entrypoint
 COPY entrypoints/jumpbox.sh /usr/local/bin/jumpbox-entrypoint
+COPY entrypoints/cron.sh /usr/local/bin/cron-entrypoint
 
 RUN chmod +x /usr/local/bin/web-entrypoint && \
+    chmod +x /usr/local/bin/php-fpm-entrypoint && \
     chmod +x /usr/local/bin/queue-entrypoint && \
     chmod +x /usr/local/bin/installer-entrypoint && \
     chmod +x /usr/local/bin/echo-entrypoint && \
-    chmod +x /usr/local/bin/jumpbox-entrypoint
+    chmod +x /usr/local/bin/cron-entrypoint
 
 WORKDIR $PM_DIR
 
