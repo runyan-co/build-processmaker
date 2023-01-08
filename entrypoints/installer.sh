@@ -35,14 +35,14 @@
   # empty the ./vendor directory
   #
   emptyVendorDir() {
-    [ -d ./vendor ] && rm -rf ./vendor/*
+    [ -d ./vendor ] && rm -rf ./vendor
   }
 
   #
   # empty the ./node_modules directory
   #
   emptyNodeModulesDir() {
-    [ -d ./node_modules ] && rm -rf ./node_modules/*
+    [ -d ./node_modules ] && rm -rf ./node_modules
   }
 
   #
@@ -137,13 +137,6 @@
     fi
 
     echo "Copying env file to app directory" && cp "$ENV_REALPATH" .
-  }
-
-  #
-  # utility to remove substring from a string
-  #
-  removeLastString() {
-    echo "${1%%$2}"
   }
 
   #
@@ -283,11 +276,6 @@
     fi
 
     #
-    # Cache the configuration
-    #
-    php artisan config:cache --no-ansi --no-interaction
-
-    #
     # Mark as installed
     #
     touch storage/build/.installed
@@ -319,9 +307,6 @@
     # app's artisan install command
     #
     if ! isInstalled; then
-      #
-      # Run the installation commands
-      #
       if ! installProcessMaker | tee -a storage/build/install.log; then
         pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1
       fi

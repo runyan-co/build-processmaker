@@ -58,10 +58,10 @@ class GetEnterprisePackages extends Command
         // These particular packages need to appear in a certain
         // order in the packages list
         $ordered_packages = [
+            'package-savedsearch',
+            'package-collections',
             'docker-executor-node-ssr',
             'connector-send-email',
-            'package-collections',
-            'package-savedsearch',
             'packages',
         ];
 

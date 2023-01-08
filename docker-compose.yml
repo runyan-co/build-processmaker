@@ -49,19 +49,16 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - DB_PORT=3306
+      - DB_PORT=${DB_PORT}
     tmpfs:
       - /tmp
       - /var/tmp
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - build:${PM_DIR}/storage/build:consistent
-      - public:${PM_DIR}/public:consistent
-      - app-storage:${PM_DIR}/storage/app:consistent
-      - composer-vendor:${PM_DIR}/vendor:delegated
-      - node-modules:${PM_DIR}/node_modules:delegated
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
+      - build:${PM_DIR}/storage/build:consistent
+      - app-storage:${PM_DIR}/storage/app:consistent
       - logs:${PM_DIR}/storage/logs:delegated
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
       - compiled-views:${PM_DIR}/storage/framework/views:delegated
@@ -134,13 +131,11 @@ services:
       - /tmp
       - /var/tmp
     volumes:
-      - build:${PM_DIR}/storage/build:consistent
-      - public:${PM_DIR}/public:consistent
-      - app-storage:${PM_DIR}/storage/app:consistent
-      - composer-vendor:${PM_DIR}/vendor:delegated
-      - node-modules:${PM_DIR}/node_modules:delegated
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
+      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
+      - build:${PM_DIR}/storage/build:consistent
+      - app-storage:${PM_DIR}/storage/app:consistent
       - logs:${PM_DIR}/storage/logs:delegated
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
       - compiled-views:${PM_DIR}/storage/framework/views:delegated
@@ -209,13 +204,10 @@ services:
         volume:
           nocopy: true
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - build:${PM_DIR}/storage/build:consistent
-      - public:${PM_DIR}/public:consistent
-      - app-storage:${PM_DIR}/storage/app:consistent
-      - composer-vendor:${PM_DIR}/vendor:delegated
-      - node-modules:${PM_DIR}/node_modules:delegated
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
+      - build:${PM_DIR}/storage/build:consistent
+      - app-storage:${PM_DIR}/storage/app:consistent
       - logs:${PM_DIR}/storage/logs:delegated
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
       - compiled-views:${PM_DIR}/storage/framework/views:delegated
@@ -293,13 +285,10 @@ services:
         volume:
           nocopy: true
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - build:${PM_DIR}/storage/build:consistent
-      - public:${PM_DIR}/public:consistent
-      - app-storage:${PM_DIR}/storage/app:consistent
-      - composer-vendor:${PM_DIR}/vendor:delegated
-      - node-modules:${PM_DIR}/node_modules:delegated
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
+      - build:${PM_DIR}/storage/build:consistent
+      - app-storage:${PM_DIR}/storage/app:consistent
       - logs:${PM_DIR}/storage/logs:delegated
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
       - compiled-views:${PM_DIR}/storage/framework/views:delegated
@@ -364,13 +353,10 @@ services:
       - /var/tmp
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - build:${PM_DIR}/storage/build:consistent
-      - public:${PM_DIR}/public:consistent
-      - app-storage:${PM_DIR}/storage/app:consistent
-      - composer-vendor:${PM_DIR}/vendor:delegated
-      - node-modules:${PM_DIR}/node_modules:delegated
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
+      - build:${PM_DIR}/storage/build:consistent
+      - app-storage:${PM_DIR}/storage/app:consistent
       - logs:${PM_DIR}/storage/logs:delegated
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
       - compiled-views:${PM_DIR}/storage/framework/views:delegated
@@ -437,13 +423,10 @@ services:
       - /var/tmp
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - build:${PM_DIR}/storage/build:consistent
-      - public:${PM_DIR}/public:consistent
-      - app-storage:${PM_DIR}/storage/app:consistent
-      - composer-vendor:${PM_DIR}/vendor:delegated
-      - node-modules:${PM_DIR}/node_modules:delegated
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
+      - build:${PM_DIR}/storage/build:consistent
+      - app-storage:${PM_DIR}/storage/app:consistent
       - logs:${PM_DIR}/storage/logs:delegated
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
       - compiled-views:${PM_DIR}/storage/framework/views:delegated
@@ -515,13 +498,10 @@ services:
       - /var/tmp
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - build:${PM_DIR}/storage/build:consistent
-      - public:${PM_DIR}/public:consistent
-      - app-storage:${PM_DIR}/storage/app:consistent
-      - composer-vendor:${PM_DIR}/vendor:delegated
-      - node-modules:${PM_DIR}/node_modules:delegated
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:delegated
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
+      - build:${PM_DIR}/storage/build:consistent
+      - app-storage:${PM_DIR}/storage/app:consistent
       - logs:${PM_DIR}/storage/logs:delegated
       - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
       - compiled-views:${PM_DIR}/storage/framework/views:delegated
@@ -537,8 +517,9 @@ services:
   mysql:
     image: mysql:8
     restart: on-failure
+    command: "mysqld --port=${DB_PORT}"
     healthcheck:
-      test: mysqladmin ping -u ${DB_USERNAME} -p${DB_PASSWORD} -h ${DB_HOST}
+      test: mysqladmin ping -P ${DB_PORT} -u ${DB_USERNAME} -p${DB_PASSWORD} -h ${DB_HOST}
       interval: 15s
       timeout: 5s
     deploy:
@@ -553,7 +534,7 @@ services:
     networks:
       - processmaker
     ports:
-      - 3306:3306
+      - ${DB_PORT}:${DB_PORT}
     environment:
       MYSQL_DATABASE: processmaker
       MYSQL_ROOT_PASSWORD: password
@@ -567,7 +548,7 @@ services:
     image: redis:7
     restart: on-failure
     healthcheck:
-      test: redis-cli ping --host 0.0.0.0
+      test: redis-cli ping --host 0.0.0.0 --port ${PM_BROADCASTER_PORT}
       interval: 15s
       timeout: 5s
     networks:
@@ -582,9 +563,6 @@ volumes:
   compiled-views: {}
   compiled-classes: {}
   compiled-facades: {}
-  composer-vendor: {}
-  node-modules: {}
-  public: {}
   build: {}
   logs: {}
   php-fpm-socket: {}
