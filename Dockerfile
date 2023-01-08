@@ -52,12 +52,11 @@ RUN apt-get update -y && \
     apt-get install -y --force-yes software-properties-common && \
     apt-get update -y && \
     apt-add-repository ppa:ondrej/php -y && \
-    apt-add-repository ppa:ondrej/nginx -y && \
     apt-get update -y && \
     apt-get install -y --force-yes \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-            time nginx vim htop curl git zip unzip wget mysql-client \
+            time vim htop curl git zip unzip wget mysql-client \
             pkg-config gcc g++ libmcrypt4 libpcre3-dev make python3 python3-pip whois acl \
             libpng-dev libmagickwand-dev libpcre2-dev jq net-tools build-essential \
             php8.1 php8.1-fpm php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd \
@@ -70,8 +69,6 @@ RUN apt-get update -y && \
     sed -i 's/www-data/root/g' /etc/php/8.1/fpm/pool.d/www.conf && \
     mkdir -p /run/php && \
     update-alternatives --set php /usr/bin/php8.1 && \
-    ln -sf /dev/stdout /var/log/nginx/access.log && \
-    ln -sf /dev/stderr /var/log/nginx/error.log && \
     curl -sS https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer && \
     composer config --global github-oauth.github.com ${GITHUB_OAUTH_TOKEN} && \
@@ -114,19 +111,7 @@ RUN echo "DefaultLimitNOFILE=65536" >>/etc/systemd/system.conf && \
 COPY stubs/php/8.1/cli/conf.d /etc/php/8.1/cli/conf.d
 COPY stubs/php/8.1/fpm/conf.d /etc/php/8.1/fpm/conf.d
 COPY stubs/php/8.1/fpm/pool.d/processmaker.conf /etc/php/8.1/fpm/pool.d/processmaker.conf
-
-#
-# ensure config files are setup properly
-#
-RUN mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak && \ 
-    mkdir -p /var/log/nginx && \
-    touch /var/log/nginx/error.log && \
-    mv /etc/php/8.1/fpm/pool.d/www.conf /etc/php/8.1/fpm/pool.d/www.conf.bak
-
-#
-# nginx config
-#
-COPY stubs/nginx/nginx.conf /etc/nginx/nginx.conf
+RUN mv /etc/php/8.1/fpm/pool.d/www.conf /etc/php/8.1/fpm/pool.d/www.conf.bak
 
 #
 # Global composer config
@@ -192,7 +177,6 @@ RUN rm -f "$PM_ENV" && \
 #
 # container entrypoints
 #
-COPY entrypoints/web.sh /usr/local/bin/web-entrypoint
 COPY entrypoints/php-fpm.sh /usr/local/bin/php-fpm-entrypoint
 COPY entrypoints/queue.sh /usr/local/bin/queue-entrypoint
 COPY entrypoints/installer.sh /usr/local/bin/installer-entrypoint
@@ -200,8 +184,7 @@ COPY entrypoints/echo.sh /usr/local/bin/echo-entrypoint
 COPY entrypoints/jumpbox.sh /usr/local/bin/jumpbox-entrypoint
 COPY entrypoints/cron.sh /usr/local/bin/cron-entrypoint
 
-RUN chmod +x /usr/local/bin/web-entrypoint && \
-    chmod +x /usr/local/bin/php-fpm-entrypoint && \
+RUN chmod +x /usr/local/bin/php-fpm-entrypoint && \
     chmod +x /usr/local/bin/queue-entrypoint && \
     chmod +x /usr/local/bin/installer-entrypoint && \
     chmod +x /usr/local/bin/echo-entrypoint && \
