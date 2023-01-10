@@ -10,9 +10,13 @@
     # when found, otherwise bail
     #
     if [ ! -f storage/build/.env ]; then
-      echo "App env file not found (env not ready)..." && exit 0
+      echo "App env file not found (env not ready)..."
+      return 1
     elif [ ! -f storage/build/.installed ]; then
-      echo "ProcessMaker installation not complete.." && exit 0
+      echo "ProcessMaker installation not complete.."
+      return 1
+    else
+      return 0
     fi
   }
 
@@ -21,7 +25,10 @@
   #
   checkForMaintenanceMode() {
     if [ -f storage/framework/maintenance.php ]; then
-      echo "ProcessMaker in maintenance mode..." && exit 0
+      echo "ProcessMaker in maintenance mode..."
+      return 1
+    else
+      return 0
     fi
   }
 
@@ -30,27 +37,27 @@
   #
   removeLockFile() {
     if [ -f laravel-echo-server.lock ]; then
-      rm -rf laravel-echo-server.lock
+      rm -rf laravel-echo-server.lock;
     fi
   }
 
   #
   # 1. Wait for the .env file (the installer service will place it
   #    in the storage:/var/www/html-/storage/keys directory)
-  awaitInstallation
-
   #
   # 2. Check for maintenance mode and continue when not in
   #    maintenance mode
-  checkForMaintenanceMode
+  until awaitInstallation && checkForMaintenanceMode; do
+    sleep 5
+  done
 
   #
   # 3. Remove any existing echo server lock file
   #
-  removeLockFile
+  removeLockFile;
 
   #
   # 4. Run the entrypoint command
   #
-  bash -c 'npx /var/www/html/node_modules/.bin/laravel-echo-server start --force --dev'
+  bash -c 'npx /var/www/html/node_modules/.bin/laravel-echo-server start --force --dev';
 }

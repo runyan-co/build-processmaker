@@ -13,7 +13,7 @@
   #
   sourceDockerEnv() {
     if [ -f /.docker.env ]; then
-      source /.docker.env
+      source /.docker.env;
     fi
   }
 
@@ -21,28 +21,28 @@
   # restore public dir
   #
   restorePublicDirectory() {
-    git restore ./public
+    git restore ./public;
   }
 
   #
   # restore app-specific storage dir
   #
   restoreAppStorage() {
-    git restore ./storage/app
+    git restore ./storage/app;
   }
 
   #
   # empty the ./vendor directory
   #
   emptyVendorDir() {
-    [ -d ./vendor ] && rm -rf ./vendor
+    [ -d ./vendor ] && rm -rf ./vendor;
   }
 
   #
   # empty the ./node_modules directory
   #
   emptyNodeModulesDir() {
-    [ -d ./node_modules ] && rm -rf ./node_modules
+    [ -d ./node_modules ] && rm -rf ./node_modules;
   }
 
   #
@@ -56,30 +56,30 @@
         {
           # Let the user know which package is
           # being installed
-          pm-cli output:header "Installing processmaker/$PACKAGE"
+          pm-cli output:header "Installing processmaker/$PACKAGE";
 
           # Use composer to require the package
           # we want to install
-          composer require "processmaker/$PACKAGE" --quiet --no-ansi --no-plugins --no-interaction
+          composer require "processmaker/$PACKAGE" --quiet --no-ansi --no-plugins --no-interaction;
 
           # Run the related artisan install command
           # the package provides
-          php artisan "$PACKAGE:install" --no-ansi --no-interaction
+          php artisan "$PACKAGE:install" --no-ansi --no-interaction;
 
           # Publish any assets or files the package provides
-          php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction
+          php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction;
 
           # Add the installed package to our
           # build dotfile for safekeeping
-          echo "$PACKAGE" >>"$PACKAGES_DOTFILE"
+          echo "$PACKAGE" >>"$PACKAGES_DOTFILE";
         }
       done
 
-      composer dumpautoload -o --no-ansi --no-interaction
-      pm-cli output:header "Enterprise packages installed"
+      composer dumpautoload -o --no-ansi --no-interaction;
+      pm-cli output:header "Enterprise packages installed";
 
     else
-      pm-cli output:header "Enterprise packages already installed"
+      pm-cli output:header "Enterprise packages already installed";
     fi
   }
 
@@ -92,11 +92,11 @@
     #
     # Create and link the .env file
     #
-    pm-cli output:header "Setting up environment"
+    pm-cli output:header "Setting up environment";
 
     if [ ! -f "$ENV_REALPATH" ]; then
-      echo "Copying env setup file to build folder"
-      cp "$PM_SETUP_DIR/.env.example" "$ENV_REALPATH"
+      echo "Copying env setup file to build folder";
+      cp "$PM_SETUP_DIR/.env.example" "$ENV_REALPATH";
     fi
 
     #
@@ -130,27 +130,22 @@
       echo "DATA_DB_PASSWORD=${DB_PASSWORD}";
       echo "DATA_DB_PORT=${DB_PORT}";
       echo "DATA_DB_NAME=${DB_NAME}";
-    } >>"$ENV_REALPATH"
+    } >>"$ENV_REALPATH";
 
     if [ -f .env ]; then
-      echo "Removing default .env file" && rm -f .env
+      echo "Removing default .env file";
+      rm -f .env;
     fi
 
-    echo "Copying env file to app directory" && cp "$ENV_REALPATH" .
-  }
-
-  #
-  # Copy laravel echo server config
-  #
-  copyEchoServerConfig() {
-    cp "$PM_SETUP_DIR/laravel-echo-server.json" .
+    echo "Copying env file to app directory";
+    cp "$ENV_REALPATH" .;
   }
 
   #
   # Install app's composer dependencies
   #
   installComposerDeps() {
-    pm-cli output:header "Installing composer dependencies"
+    pm-cli output:header "Installing composer dependencies";
 
     composer install \
       --no-progress \
@@ -158,20 +153,20 @@
       --no-scripts \
       --no-plugins \
       --no-ansi \
-      --no-interaction
+      --no-interaction;
 
-    composer clear-cache --no-ansi --no-interaction
+    composer clear-cache --no-ansi --no-interaction;
   }
 
   #
   # Install app's npm dependencies
   #
   npmInstallAndBuild() {
-    pm-cli output:header "Installing npm dependencies"
-    npm clean-install --no-audit
-    pm-cli output:header "Compiling npm assets"
-    npm run dev --no-progress
-    npm cache clear --force
+    pm-cli output:header "Installing npm dependencies";
+    npm clean-install --no-audit;
+    pm-cli output:header "Compiling npm assets";
+    npm run dev --no-progress;
+    npm cache clear --force;
   }
 
   #
@@ -179,39 +174,32 @@
   #
   installApplication() {
     #
-    # Setup configuration files
-    #
-    if ! copyEchoServerConfig; then
-      pm-cli output:error "Error when trying to copy laravel echo server config" && exit 1
-    fi
-
-    #
     # Install composer dependencies
     #
     if ! installComposerDeps; then
-      pm-cli output:error "Error while installing composer dependencies" && exit 1
+      pm-cli output:error "Error while installing composer dependencies" && exit 1;
     fi
 
     #
     # Install npm dependencies and run build
     #
     if ! npmInstallAndBuild; then
-      pm-cli output:error "Error while installing npm dependencies or building assets" && exit 1
+      pm-cli output:error "Error while installing npm dependencies or building assets" && exit 1;
     fi
 
     #
     # Run the remaining artisan commands to
     # finish the base installation
     #
-    php artisan key:generate --no-interaction --no-ansi
-    php artisan package:discover --no-interaction --no-ansi
-    php artisan horizon:publish --no-interaction --no-ansi
-    php artisan telescope:publish --force --no-interaction --no-ansi
-    php artisan migrate:fresh --force --no-interaction --no-ansi
-    php artisan db:seed --force --no-interaction --no-ansi
-    php artisan passport:install --no-interaction --no-ansi
-    php artisan storage:link --no-interaction --no-ansi
-    php artisan telescope:publish --force --no-interaction --no-ansi
+    php artisan key:generate --no-interaction --no-ansi;
+    php artisan package:discover --no-interaction --no-ansi;
+    php artisan horizon:publish --no-interaction --no-ansi;
+    php artisan telescope:publish --force --no-interaction --no-ansi;
+    php artisan migrate:fresh --force --no-interaction --no-ansi;
+    php artisan db:seed --force --no-interaction --no-ansi;
+    php artisan passport:install --no-interaction --no-ansi;
+    php artisan storage:link --no-interaction --no-ansi;
+    php artisan telescope:publish --force --no-interaction --no-ansi;
   }
 
   #
@@ -219,7 +207,7 @@
   #
   awaitMysql() {
     until mysqladmin ping -u "$DB_USERNAME" -P "$DB_PORT" -p"$DB_PASSWORD" -h "$DB_HOST" >/dev/null 2>&1; do
-      echo "Waiting for mysql..." && sleep 1
+      echo "Waiting for mysql..." && sleep 1;
     done
   }
 
@@ -242,20 +230,20 @@
     #
     # Wait for MySQL to come online
     #
-    awaitMysql
+    awaitMysql;
 
     #
     # commands to restore directories
     # replaced by persisted volumes
     # when initialized
     #
-    restoreDirectories
+    restoreDirectories;
 
     #
     # setup the environment
     #
     if ! setupEnvironment; then
-      pm-cli output:error "Could not setup environment" && exit 1
+      pm-cli output:error "Could not setup environment" && exit 1;
     fi
 
     #
@@ -263,9 +251,9 @@
     # service container
     #
     if ! installApplication; then
-      pm-cli output:error "Could not install ProcessMaker" && exit 1
+      pm-cli output:error "Could not install ProcessMaker" && exit 1;
     else
-      pm-cli output:header "ProcessMaker successfully installed"
+      pm-cli output:header "ProcessMaker successfully installed";
     fi
 
     #
@@ -273,16 +261,16 @@
     #
     if [ "$INSTALL_ENTERPRISE_PACKAGES" = true ]; then
       if ! installEnterprisePackages; then
-        pm-cli output:error "Could not install enterprise packages" && exit 1
+        pm-cli output:error "Could not install enterprise packages" && exit 1;
       else
-        pm-cli output:header "ProcessMaker enterprise packages successfully installed"
+        pm-cli output:header "ProcessMaker enterprise packages successfully installed";
       fi
     fi
 
     #
     # Mark as installed
     #
-    touch storage/build/.installed
+    touch storage/build/.installed;
   }
 
   #
@@ -290,9 +278,9 @@
   #
   isInstalled() {
     if [ -f storage/build/.installed ]; then
-      return 0
+      return 0;
     else
-      return 1
+      return 1;
     fi
   }
 
@@ -303,7 +291,7 @@
     #
     # Source a few necessary env variables
     #
-    sourceDockerEnv
+    sourceDockerEnv;
 
     #
     # If we don't find a linked .env file and this is
@@ -312,10 +300,10 @@
     #
     if ! isInstalled; then
       if ! installProcessMaker | tee -a storage/build/install.log; then
-        pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1
+        pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1;
       fi
     fi
   }
 
-  entrypoint && exec "$@"
+  entrypoint && exec "$@";
 }

@@ -10,9 +10,13 @@
     # when found, otherwise bail
     #
     if [ ! -f storage/build/.env ]; then
-      echo "App env file not found (env not ready)..." && exit 0
+      echo "App env file not found (env not ready)..."
+      return 1
     elif [ ! -f storage/build/.installed ]; then
-      echo "ProcessMaker installation not complete.." && exit 0
+      echo "ProcessMaker installation not complete.."
+      return 1
+    else
+      return 0
     fi
   }
 
@@ -21,22 +25,25 @@
   #
   checkForMaintenanceMode() {
     if [ -f storage/framework/maintenance.php ]; then
-      echo "ProcessMaker in maintenance mode..." && exit 0
+      echo "ProcessMaker in maintenance mode..."
+      return 1
+    else
+      return 0
     fi
   }
 
   #
   # 1. Wait for the .env file (the installer service will place it
   #    in the storage:/var/www/html-/storage/keys directory)
-  awaitInstallation
-
   #
   # 2. Check for maintenance mode and continue when not in
   #    maintenance mode
-  checkForMaintenanceMode
+  until awaitInstallation && checkForMaintenanceMode; do
+    sleep 5
+  done
 
   #
   # 3. Run the entrypoint command
   #
-  bash -c 'php-fpm8.1 --fpm-config /etc/php/8.1/fpm/php-fpm.conf --nodaemonize --allow-to-run-as-root'
+  php-fpm8.1 --fpm-config /etc/php/8.1/fpm/php-fpm.conf --nodaemonize --allow-to-run-as-root
 }

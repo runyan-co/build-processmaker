@@ -110,8 +110,7 @@ RUN echo "DefaultLimitNOFILE=65536" >>/etc/systemd/system.conf && \
 #
 COPY stubs/php/8.1/cli/conf.d /etc/php/8.1/cli/conf.d
 COPY stubs/php/8.1/fpm/conf.d /etc/php/8.1/fpm/conf.d
-COPY stubs/php/8.1/fpm/pool.d/processmaker.conf /etc/php/8.1/fpm/pool.d/processmaker.conf
-RUN mv /etc/php/8.1/fpm/pool.d/www.conf /etc/php/8.1/fpm/pool.d/www.conf.bak
+COPY stubs/php/8.1/fpm/pool.d/processmaker.conf /etc/php/8.1/fpm/pool.d/www.conf
 
 #
 # Global composer config
@@ -135,7 +134,6 @@ WORKDIR $PM_SETUP_DIR
 # bring over needed config files
 #
 COPY stubs/.env.example .
-COPY stubs/echo/laravel-echo-server.json .
 
 #
 # install the ProcessMaker-specific cli utility
@@ -175,20 +173,28 @@ RUN rm -f "$PM_ENV" && \
     } >"$PM_ENV"
 
 #
+# file watcher setup
+#
+COPY stubs/file-watcher/watch.js .
+RUN npm -g add chokidar picomatch && \
+    npm -g cache clean --force
+
+#
 # container entrypoints
 #
 COPY entrypoints/php-fpm.sh /usr/local/bin/php-fpm-entrypoint
 COPY entrypoints/queue.sh /usr/local/bin/queue-entrypoint
 COPY entrypoints/installer.sh /usr/local/bin/installer-entrypoint
 COPY entrypoints/echo.sh /usr/local/bin/echo-entrypoint
-COPY entrypoints/jumpbox.sh /usr/local/bin/jumpbox-entrypoint
 COPY entrypoints/cron.sh /usr/local/bin/cron-entrypoint
+COPY entrypoints/file-watcher.sh /usr/local/bin/file-watcher-entrypoint
 
 RUN chmod +x /usr/local/bin/php-fpm-entrypoint && \
     chmod +x /usr/local/bin/queue-entrypoint && \
     chmod +x /usr/local/bin/installer-entrypoint && \
     chmod +x /usr/local/bin/echo-entrypoint && \
-    chmod +x /usr/local/bin/cron-entrypoint
+    chmod +x /usr/local/bin/cron-entrypoint && \
+    chmod +x /usr/local/bin/file-watcher-entrypoint
 
 WORKDIR $PM_DIR
 

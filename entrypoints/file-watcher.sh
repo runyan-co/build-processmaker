@@ -43,7 +43,42 @@
   done
 
   #
-  # 4. Run the entrypoint command
+  # Get the service container ids which would need
+  # to be restarted if a file changes
   #
-  bash -c '"$PHP_BINARY" "artisan" horizon --no-interaction --no-ansi';
+  getContainerIds() {
+    docker container ps --filter status=running | grep 'cron\|queue\|php-fpm' | awk '{ print $1; }';
+  }
+
+  #
+  # Restart specific services to reflect changes when a
+  # file system event is detected
+  #
+  restartServices() {
+    echo "Restarting service containers"
+    docker container restart --time 0 $(getContainerIds);
+  }
+
+  #
+  # Start watching for file changes and restart relevant
+  # services when detected
+  #
+  watchFiles() {
+    if node "$PM_DIR/watch.js"; then
+      if restartServices; then
+        return 0;
+      fi
+    fi
+  }
+
+  #
+  # Run a loop to restart the file watcher if it
+  # exits after a file change
+  #
+  while true; do
+    if watchFiles; then
+      echo "Cooling down";
+      sleep 5;
+    fi
+  done
 }

@@ -1,4 +1,59 @@
 services:
+  file-watcher:
+    image: processmaker:${PM_IMAGE_NAME}
+    restart: "on-failure"
+    entrypoint: ["/usr/local/bin/file-watcher-entrypoint"]
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+      - '${PM_DOMAIN}:host-gateway'
+    sysctls:
+      kernel.domainname: ${PM_DOMAIN}
+      net.ipv4.tcp_syncookies: 1
+      net.ipv4.conf.all.rp_filter: 1
+      net.ipv4.conf.all.secure_redirects: 1
+      net.ipv4.conf.all.send_redirects: 0
+      net.ipv4.conf.all.accept_source_route: 0
+      net.ipv6.conf.all.accept_source_route: 0
+      net.ipv4.icmp_echo_ignore_broadcasts: 1
+      net.ipv4.tcp_timestamps: 0
+      net.ipv4.tcp_rmem: '4096 4096 16777216'
+      net.ipv4.tcp_wmem: '4096 4096 16777216'
+      net.ipv4.tcp_tw_reuse: 1
+      net.ipv4.tcp_fin_timeout: 30
+      net.core.somaxconn: 60000
+      net.ipv4.tcp_synack_retries: 3
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+      - 2606:4700:4700::1111
+      - 2606:4700:4700::1001
+      - 0.0.0.0
+    build:
+      context: .
+      args:
+        PM_DOCKER_SOCK:
+        PM_BRANCH:
+        PM_APP_PORT:
+        PM_BROADCASTER_PORT:
+        PM_DOMAIN:
+        PM_DIR:
+        GITHUB_EMAIL:
+        GITHUB_USERNAME:
+        GITHUB_OAUTH_TOKEN:
+    networks:
+      - processmaker
+    env_file:
+      - .env
+    volumes:
+      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
+      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
+      - ${PM_BUILD_SOURCE}:/opt/build
+      - build:${PM_DIR}/storage/build:consistent
+    tmpfs:
+      - /tmp
+      - /var/tmp
+
   installer:
     image: processmaker:${PM_IMAGE_NAME}
     restart: "no"
@@ -55,6 +110,11 @@ services:
       - /tmp
       - /var/tmp
     volumes:
+      - type: volume
+        source: sockets
+        target: /var/run/mysqld
+        volume:
+          nocopy: true
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
@@ -70,85 +130,17 @@ services:
     depends_on:
       - mysql
       - redis
-
-  jumpbox:
-    image: processmaker:${PM_IMAGE_NAME}
-    restart: "always"
-    entrypoint: ["/usr/local/bin/jumpbox-entrypoint"]
-    networks:
-      - processmaker
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
-      - '${PM_DOMAIN}:host-gateway'
-    deploy:
-      mode: global
-      resources:
-        limits:
-          cpus: '0.33'
-          memory: 512M
-    sysctls:
-      kernel.domainname: ${PM_DOMAIN}
-      net.ipv4.tcp_syncookies: 1
-      net.ipv4.conf.all.rp_filter: 1
-      net.ipv4.conf.all.secure_redirects: 1
-      net.ipv4.conf.all.send_redirects: 0
-      net.ipv4.conf.all.accept_source_route: 0
-      net.ipv6.conf.all.accept_source_route: 0
-      net.ipv4.icmp_echo_ignore_broadcasts: 1
-      net.ipv4.tcp_timestamps: 0
-      net.ipv4.tcp_rmem: '4096 4096 16777216'
-      net.ipv4.tcp_wmem: '4096 4096 16777216'
-      net.ipv4.tcp_tw_reuse: 1
-      net.ipv4.tcp_fin_timeout: 30
-      net.core.somaxconn: 60000
-      net.ipv4.tcp_synack_retries: 3
-    dns:
-      - 1.1.1.1
-      - 1.0.0.1
-      - 2606:4700:4700::1111
-      - 2606:4700:4700::1001
-      - 0.0.0.0
-    env_file:
-      - .env
-    build:
-      context: .
-      args:
-        PM_DOCKER_SOCK:
-        PM_BRANCH:
-        PM_APP_PORT:
-        PM_BROADCASTER_PORT:
-        PM_DOMAIN:
-        PM_DIR:
-        GITHUB_EMAIL:
-        GITHUB_USERNAME:
-        GITHUB_OAUTH_TOKEN:
-    links:
-      - mysql
-      - redis
-    depends_on:
-      - mysql
-      - redis
-      - installer
-    tmpfs:
-      - /tmp
-      - /var/tmp
-    volumes:
-      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
-      - build:${PM_DIR}/storage/build:consistent
-      - app-storage:${PM_DIR}/storage/app:consistent
-      - logs:${PM_DIR}/storage/logs:delegated
-      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
-      - compiled-views:${PM_DIR}/storage/framework/views:delegated
-      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
 
   php-fpm:
     image: processmaker:${PM_IMAGE_NAME}
     restart: always
     entrypoint: ["/usr/local/bin/php-fpm-entrypoint"]
+    stop_signal: SIGKILL
     deploy:
       mode: global
+      restart_policy:
+        condition: always
+        delay: 5s
       resources:
         reservations:
           cpus: '0.66'
@@ -202,8 +194,13 @@ services:
       - /var/tmp
     volumes:
       - type: volume
-        source: php-fpm-socket
+        source: sockets
         target: /var/run/php
+        volume:
+          nocopy: true
+      - type: volume
+        source: sockets
+        target: /var/run/mysqld
         volume:
           nocopy: true
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
@@ -228,6 +225,9 @@ services:
     restart: always
     deploy:
       mode: global
+      restart_policy:
+        condition: always
+        delay: 5s
       resources:
         reservations:
           cpus: '0.5'
@@ -255,7 +255,7 @@ services:
       - /var/tmp
     volumes:
       - type: volume
-        source: php-fpm-socket
+        source: sockets
         target: /var/run/php
         volume:
           nocopy: true
@@ -275,11 +275,15 @@ services:
     image: processmaker:${PM_IMAGE_NAME}
     restart: always
     entrypoint: ["/usr/local/bin/cron-entrypoint"]
+    stop_signal: SIGKILL
     extra_hosts:
       - 'host.docker.internal:host-gateway'
       - '${PM_DOMAIN}:host-gateway'
     deploy:
       mode: global
+      restart_policy:
+        condition: always
+        delay: 5s
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
       net.ipv4.tcp_syncookies: 1
@@ -346,6 +350,9 @@ services:
     entrypoint: ["/usr/local/bin/echo-entrypoint"]
     deploy:
       mode: global
+      restart_policy:
+        condition: always
+        delay: 5s
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
       net.ipv4.tcp_syncookies: 1
@@ -395,6 +402,7 @@ services:
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_BUILD_SOURCE}/stubs/echo/laravel-echo-server.json:${PM_DIR}/laravel-echo-server.json:ro
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
       - build:${PM_DIR}/storage/build:consistent
       - app-storage:${PM_DIR}/storage/app:consistent
@@ -415,8 +423,8 @@ services:
     image: processmaker:${PM_IMAGE_NAME}
     restart: always
     entrypoint: ["/usr/local/bin/queue-entrypoint"]
-    stop_signal: SIGINT
-    stop_grace_period: 15s
+    stop_signal: SIGKILL
+    stop_grace_period: 5s
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
       net.ipv4.tcp_syncookies: 1
@@ -449,6 +457,9 @@ services:
     deploy:
       mode: replicated
       replicas: 2
+      restart_policy:
+        condition: always
+        delay: 5s
     build:
       context: .
       args:
@@ -469,6 +480,11 @@ services:
       - /tmp
       - /var/tmp
     volumes:
+      - type: volume
+        source: sockets
+        target: /var/run/mysqld
+        volume:
+          nocopy: true
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
@@ -498,11 +514,11 @@ services:
       mode: global
       resources:
         reservations:
-          cpus: '1.33'
-          memory: 2G
+          cpus: '1'
+          memory: 1.5G
         limits:
-          cpus: '2.33'
-          memory: 4G
+          cpus: '2'
+          memory: 3G
     networks:
       - processmaker
     ports:
@@ -512,7 +528,13 @@ services:
       MYSQL_ROOT_PASSWORD: password
     tmpfs:
       - /tmp
+      - /var/tmp
     volumes:
+      - type: volume
+        source: sockets
+        target: /var/run/mysqld
+        volume:
+          nocopy: true
       - mysql-data:/var/lib/mysql
       - ${PM_BUILD_SOURCE}/stubs/mysql:/etc/mysql/conf.d:ro
 
@@ -535,7 +557,7 @@ volumes:
   compiled-views: {}
   compiled-classes: {}
   compiled-facades: {}
-  php-fpm-socket: {}
+  sockets: {}
   build: {}
   logs: {}
 
