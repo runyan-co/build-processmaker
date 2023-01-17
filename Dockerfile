@@ -54,15 +54,15 @@ RUN apt-get update -y && \
     apt-add-repository ppa:ondrej/php -y && \
     apt-get update -y && \
     apt-get install -y --force-yes \
-        -o Dpkg::Options::="--force-confdef" \
-        -o Dpkg::Options::="--force-confold" \
-            time vim htop curl git zip unzip wget mysql-client \
-            pkg-config gcc g++ libmcrypt4 libpcre3-dev make python3 python3-pip whois acl \
-            libpng-dev libmagickwand-dev libpcre2-dev jq net-tools build-essential \
-            php8.1 php8.1-fpm php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd \
-            php8.1-mbstring php8.1-curl php8.1-xml php8.1-bcmath php8.1-imagick php8.1-dom \
-            php8.1-sqlite3 php8.1-imap php8.1-redis php8.1-dev php8.1-mysql php8.1-soap \
-            php8.1-intl php8.1-readline php8.1-msgpack php8.1-igbinary php8.1-gmp && \
+    -o Dpkg::Options::="--force-confdef" \
+    -o Dpkg::Options::="--force-confold" \
+    time vim htop curl git zip unzip wget mysql-client \
+    pkg-config gcc g++ libmcrypt4 libpcre3-dev make python3 python3-pip whois acl \
+    libpng-dev libmagickwand-dev libpcre2-dev jq net-tools build-essential \
+    php8.1 php8.1-fpm php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd \
+    php8.1-mbstring php8.1-curl php8.1-xml php8.1-bcmath php8.1-imagick php8.1-dom \
+    php8.1-sqlite3 php8.1-imap php8.1-redis php8.1-dev php8.1-mysql php8.1-soap \
+    php8.1-intl php8.1-readline php8.1-msgpack php8.1-igbinary php8.1-gmp && \
     git config --global user.name ${GITHUB_USERNAME} && \
     git config --global user.email ${GITHUB_EMAIL} && \
     setcap "cap_net_bind_service=+ep" /usr/bin/php8.1 && \
@@ -159,17 +159,17 @@ RUN rm -f "$PM_ENV" && \
     touch "$PM_ENV" && \
     chmod -x "$PM_ENV" && \
     { \
-        echo PHP_BINARY=$PHP_BINARY; \
-        echo PM_COMPOSER_PACKAGES_PATH=$PM_COMPOSER_PACKAGES_PATH; \
-        echo PM_DIR=$PM_DIR; \
-        echo PM_CLI_DIR=$PM_CLI_DIR; \
-        echo PM_SETUP_DIR=$PM_SETUP_DIR; \
-        echo PM_BRANCH=$PM_BRANCH; \
-        echo PM_DOCKER_SOCK=$PM_DOCKER_SOCK; \
-        echo COMPOSER_ALLOW_SUPERUSER=$COMPOSER_ALLOW_SUPERUSER; \
-        echo NVM_DIR=$NVM_DIR; \
-        echo NODE_PATH=$NODE_PATH; \
-        echo NPX_PATH=$NPX_PATH; \
+    echo PHP_BINARY=$PHP_BINARY; \
+    echo PM_COMPOSER_PACKAGES_PATH=$PM_COMPOSER_PACKAGES_PATH; \
+    echo PM_DIR=$PM_DIR; \
+    echo PM_CLI_DIR=$PM_CLI_DIR; \
+    echo PM_SETUP_DIR=$PM_SETUP_DIR; \
+    echo PM_BRANCH=$PM_BRANCH; \
+    echo PM_DOCKER_SOCK=$PM_DOCKER_SOCK; \
+    echo COMPOSER_ALLOW_SUPERUSER=$COMPOSER_ALLOW_SUPERUSER; \
+    echo NVM_DIR=$NVM_DIR; \
+    echo NODE_PATH=$NODE_PATH; \
+    echo NPX_PATH=$NPX_PATH; \
     } >"$PM_ENV"
 
 #
