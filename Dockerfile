@@ -134,6 +134,8 @@ WORKDIR $PM_SETUP_DIR
 # bring over needed config files
 #
 COPY stubs/.env.example .
+COPY stubs/file-watcher/watch.js .
+ENV WATCH_JS_PATH "$PM_SETUP_DIR/watch.js"
 
 #
 # install the ProcessMaker-specific cli utility

@@ -1,7 +1,12 @@
 services:
   file-watcher:
     image: processmaker:${PM_IMAGE_NAME}
-    restart: "on-failure"
+    deploy:
+      mode: global
+      restart_policy:
+        delay: 0s
+        condition: on-failure
+        max_attempts: 3
     entrypoint: ["/usr/local/bin/file-watcher-entrypoint"]
     extra_hosts:
       - 'host.docker.internal:host-gateway'
@@ -48,7 +53,6 @@ services:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
-      - ${PM_BUILD_SOURCE}:/opt/build
       - build:${PM_DIR}/storage/build:consistent
     tmpfs:
       - /tmp
@@ -56,8 +60,11 @@ services:
 
   installer:
     image: processmaker:${PM_IMAGE_NAME}
-    restart: "no"
     entrypoint: ["/usr/local/bin/installer-entrypoint"]
+    deploy:
+      mode: global
+      restart_policy:
+        condition: "no"
     extra_hosts:
       - 'host.docker.internal:host-gateway'
       - '${PM_DOMAIN}:host-gateway'
@@ -133,14 +140,14 @@ services:
 
   php-fpm:
     image: processmaker:${PM_IMAGE_NAME}
-    restart: always
     entrypoint: ["/usr/local/bin/php-fpm-entrypoint"]
     stop_signal: SIGKILL
     deploy:
       mode: global
       restart_policy:
-        condition: always
-        delay: 5s
+        condition: on-failure
+        max_attempts: 3
+        delay: 0s
       resources:
         reservations:
           cpus: '0.66'
@@ -222,12 +229,12 @@ services:
 
   web:
     image: nginx:stable
-    restart: always
     deploy:
       mode: global
       restart_policy:
-        condition: always
-        delay: 5s
+        condition: on-failure
+        delay: 0s
+        max_attempts: 3
       resources:
         reservations:
           cpus: '0.5'
@@ -273,7 +280,6 @@ services:
 
   cron:
     image: processmaker:${PM_IMAGE_NAME}
-    restart: always
     entrypoint: ["/usr/local/bin/cron-entrypoint"]
     stop_signal: SIGKILL
     extra_hosts:
@@ -282,8 +288,9 @@ services:
     deploy:
       mode: global
       restart_policy:
-        condition: always
-        delay: 5s
+        condition: on-failure
+        delay: 0s
+        max_attempts: 3
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
       net.ipv4.tcp_syncookies: 1
@@ -346,13 +353,13 @@ services:
 
   echo:
     image: processmaker:${PM_IMAGE_NAME}
-    restart: always
     entrypoint: ["/usr/local/bin/echo-entrypoint"]
     deploy:
       mode: global
       restart_policy:
-        condition: always
-        delay: 5s
+        condition: on-failure
+        delay: 0s
+        max_attempts: 3
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
       net.ipv4.tcp_syncookies: 1
@@ -421,7 +428,6 @@ services:
 
   queue:
     image: processmaker:${PM_IMAGE_NAME}
-    restart: always
     entrypoint: ["/usr/local/bin/queue-entrypoint"]
     stop_signal: SIGKILL
     stop_grace_period: 5s
@@ -458,8 +464,9 @@ services:
       mode: replicated
       replicas: 2
       restart_policy:
-        condition: always
-        delay: 5s
+        condition: on-failure
+        delay: 0s
+        max_attempts: 3
     build:
       context: .
       args:

@@ -15,7 +15,7 @@ const watcher = chokidar.watch(['.', '/opt/packages'], {
 log('File watcher started');
 watcher.on('all', (event, path) => {
   if (isPhpFile(path)) {
-    log(`${event}: ${path} - exiting...`);
+    log(`${event}: ${path}`);
     process.exit(0)
   }
 });
