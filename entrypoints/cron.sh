@@ -33,15 +33,6 @@
   }
 
   #
-  # loop every 60 sec instead of using cron
-  #
-  runArtisanSchedule() {
-    bash -c '"$PHP_BINARY" "artisan" schedule:run --no-interaction --no-ansi';
-    sleep 60;
-    runArtisanSchedule;
-  }
-
-  #
   # 1. Wait for the .env file (the installer service will place it
   #    in the storage:/var/www/html-/storage/keys directory)
   #
@@ -54,5 +45,7 @@
   #
   # 3. Run the entrypoint command
   #
-  runArtisanSchedule;
+  while php artisan schedule:run --no-interaction --no-ansi; do
+    sleep 60;
+  done
 }

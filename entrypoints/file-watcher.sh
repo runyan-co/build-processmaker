@@ -64,7 +64,7 @@
   # services when detected
   #
   watchFiles() {
-    if node "$PM_DIR/watch.js"; then
+    if node "$WATCH_JS_PATH"; then
       if restartServices; then
         return 0;
       fi
@@ -79,6 +79,9 @@
     if watchFiles; then
       echo "Cooling down";
       sleep 5;
+    else
+      echo "Error encountered, shutting down";
+      exit 1;
     fi
   done
 }

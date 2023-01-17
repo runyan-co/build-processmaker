@@ -5,7 +5,7 @@
   # Define this for use later
   #
   if [ -n "$INSTALL_ENTERPRISE_PACKAGES" ]; then
-    export INSTALL_ENTERPRISE_PACKAGES=false
+    export INSTALL_ENTERPRISE_PACKAGES=true
   fi
 
   #
@@ -305,5 +305,5 @@
     fi
   }
 
-  entrypoint && exec "$@";
+  entrypoint;
 }
