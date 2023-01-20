@@ -134,8 +134,6 @@ WORKDIR $PM_SETUP_DIR
 # bring over needed config files
 #
 COPY stubs/.env.example .
-COPY stubs/file-watcher/watch.js .
-ENV WATCH_JS_PATH "$PM_SETUP_DIR/watch.js"
 
 #
 # install the ProcessMaker-specific cli utility
@@ -175,10 +173,10 @@ RUN rm -f "$PM_ENV" && \
     } >"$PM_ENV"
 
 #
-# file watcher setup
+# setup the file watcher for restarting
+# containers during local development
 #
-COPY stubs/file-watcher/watch.js .
-RUN npm -g add chokidar picomatch && \
+RUN npm install -g chokidar-cli && \
     npm -g cache clean --force
 
 #
@@ -191,12 +189,18 @@ COPY entrypoints/echo.sh /usr/local/bin/echo-entrypoint
 COPY entrypoints/cron.sh /usr/local/bin/cron-entrypoint
 COPY entrypoints/file-watcher.sh /usr/local/bin/file-watcher-entrypoint
 
+#
+# additional scripts
+#
+COPY stubs/file-watcher/restart-services.sh /usr/local/bin/restart-services
+
 RUN chmod +x /usr/local/bin/php-fpm-entrypoint && \
     chmod +x /usr/local/bin/queue-entrypoint && \
     chmod +x /usr/local/bin/installer-entrypoint && \
     chmod +x /usr/local/bin/echo-entrypoint && \
     chmod +x /usr/local/bin/cron-entrypoint && \
-    chmod +x /usr/local/bin/file-watcher-entrypoint
+    chmod +x /usr/local/bin/file-watcher-entrypoint && \
+    chmod +x /usr/local/bin/restart-services
 
 WORKDIR $PM_DIR
 

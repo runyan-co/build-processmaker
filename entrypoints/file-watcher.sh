@@ -42,46 +42,15 @@
     sleep 5
   done
 
-  #
-  # Get the service container ids which would need
-  # to be restarted if a file changes
-  #
-  getContainerIds() {
-    docker container ps --filter status=running | grep 'cron\|queue\|php-fpm' | awk '{ print $1; }';
-  }
-
-  #
-  # Restart specific services to reflect changes when a
-  # file system event is detected
-  #
-  restartServices() {
-    echo "Restarting service containers"
-    docker container restart --time 0 $(getContainerIds);
-  }
-
-  #
-  # Start watching for file changes and restart relevant
-  # services when detected
-  #
-  watchFiles() {
-    if node "$WATCH_JS_PATH"; then
-      if restartServices; then
-        return 0;
-      fi
-    fi
-  }
-
-  #
-  # Run a loop to restart the file watcher if it
-  # exits after a file change
-  #
-  while true; do
-    if watchFiles; then
-      echo "Cooling down";
-      sleep 5;
-    else
-      echo "Error encountered, shutting down";
-      exit 1;
-    fi
-  done
+  SHELL=$(echo "$SHELL") chokidar \
+    "config/*.php" \
+    "upgrades/**/*.php" \
+    "ProcessMaker/**/*.php" \
+    "database/**/*.php" \
+    "resources/views/**/*.php" \
+    "routes/**/*.php" \
+    "vendor/processmaker/**/*.php" \
+    --follow-symlinks \
+    --verbose \
+    --command "/usr/local/bin/restart-services";
 }
