@@ -14,7 +14,7 @@ WORKDIR /tmp
 #
 # Build arguments
 #
-ARG PM_BRANCH=develop
+ARG PM_BRANCH
 ARG PM_DOMAIN=localhost
 ARG PM_DIR=/var/www/html
 ARG PM_APP_PORT=8080
@@ -173,13 +173,6 @@ RUN rm -f "$PM_ENV" && \
     } >"$PM_ENV"
 
 #
-# setup the file watcher for restarting
-# containers during local development
-#
-RUN npm install -g chokidar-cli && \
-    npm -g cache clean --force
-
-#
 # container entrypoints
 #
 COPY entrypoints/php-fpm.sh /usr/local/bin/php-fpm-entrypoint
@@ -187,20 +180,12 @@ COPY entrypoints/queue.sh /usr/local/bin/queue-entrypoint
 COPY entrypoints/installer.sh /usr/local/bin/installer-entrypoint
 COPY entrypoints/echo.sh /usr/local/bin/echo-entrypoint
 COPY entrypoints/cron.sh /usr/local/bin/cron-entrypoint
-COPY entrypoints/file-watcher.sh /usr/local/bin/file-watcher-entrypoint
-
-#
-# additional scripts
-#
-COPY stubs/file-watcher/restart-services.sh /usr/local/bin/restart-services
 
 RUN chmod +x /usr/local/bin/php-fpm-entrypoint && \
     chmod +x /usr/local/bin/queue-entrypoint && \
     chmod +x /usr/local/bin/installer-entrypoint && \
     chmod +x /usr/local/bin/echo-entrypoint && \
-    chmod +x /usr/local/bin/cron-entrypoint && \
-    chmod +x /usr/local/bin/file-watcher-entrypoint && \
-    chmod +x /usr/local/bin/restart-services
+    chmod +x /usr/local/bin/cron-entrypoint
 
 WORKDIR $PM_DIR
 
