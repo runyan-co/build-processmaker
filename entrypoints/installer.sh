@@ -60,7 +60,7 @@
 
           # Use composer to require the package
           # we want to install
-          composer require "processmaker/$PACKAGE" --quiet --no-ansi --no-plugins --no-interaction;
+          composer require "processmaker/$PACKAGE" -vvv --no-ansi --no-plugins --no-interaction;
 
           # Run the related artisan install command
           # the package provides
@@ -75,7 +75,7 @@
         }
       done
 
-      composer dumpautoload -o --no-ansi --no-interaction;
+      composer dumpautoload -vvv -o --no-ansi --no-interaction;
       pm-cli output:header "Enterprise packages installed";
 
     else
@@ -147,7 +147,7 @@
   installComposerDeps() {
     pm-cli output:header "Installing composer dependencies";
 
-    composer install \
+    composer install -vvv \
       --no-progress \
       --optimize-autoloader \
       --no-scripts \
@@ -155,7 +155,7 @@
       --no-ansi \
       --no-interaction;
 
-    composer clear-cache --no-ansi --no-interaction;
+    composer clear-cache -vvv --no-ansi --no-interaction;
   }
 
   #

@@ -92,10 +92,10 @@ services:
       resources:
         reservations:
           cpus: '0.66'
-          memory: 1G
+          memory: 1.5G
         limits:
           cpus: '1.66'
-          memory: 1.33G
+          memory: 2G
     extra_hosts:
       - 'host.docker.internal:host-gateway'
       - '${PM_DOMAIN}:host-gateway'
