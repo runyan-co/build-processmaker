@@ -131,6 +131,13 @@ RUN composer config --global --list | grep "\[home\]" | awk '{print $2}' > .comp
 WORKDIR $PM_SETUP_DIR
 
 #
+# copy a script which installs the datadog
+# APM tracer/profiler for PHP and Node
+#
+COPY scripts/install-dd-apm.sh .
+RUN bash install-dd-apm.sh
+
+#
 # bring over needed config files
 #
 COPY stubs/.env.example .
