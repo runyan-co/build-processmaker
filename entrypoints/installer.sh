@@ -60,7 +60,7 @@
 
           # Use composer to require the package
           # we want to install
-          composer require "processmaker/$PACKAGE" -vvv --no-ansi --no-plugins --no-interaction;
+          composer require "processmaker/$PACKAGE" --no-ansi --no-plugins --no-interaction;
 
           # Run the related artisan install command
           # the package provides
@@ -75,7 +75,7 @@
         }
       done
 
-      composer dumpautoload -vvv -o --no-ansi --no-interaction;
+      composer dumpautoload -o --no-ansi --no-interaction;
       pm-cli output:header "Enterprise packages installed";
 
     else
@@ -147,7 +147,7 @@
   installComposerDeps() {
     pm-cli output:header "Installing composer dependencies";
 
-    composer install -vvv \
+    composer install \
       --no-progress \
       --optimize-autoloader \
       --no-scripts \
@@ -155,7 +155,7 @@
       --no-ansi \
       --no-interaction;
 
-    composer clear-cache -vvv --no-ansi --no-interaction;
+    composer clear-cache --no-ansi --no-interaction;
   }
 
   #
@@ -192,14 +192,14 @@
     # finish the base installation
     #
     php artisan key:generate --no-interaction --no-ansi;
-    php artisan package:discover --no-interaction --no-ansi;
-    php artisan horizon:publish --no-interaction --no-ansi;
-    php artisan telescope:publish --force --no-interaction --no-ansi;
-    php artisan migrate:fresh --force --no-interaction --no-ansi;
-    php artisan db:seed --force --no-interaction --no-ansi;
-    php artisan passport:install --no-interaction --no-ansi;
-    php artisan storage:link --no-interaction --no-ansi;
-    php artisan telescope:publish --force --no-interaction --no-ansi;
+    php artisan package:discover --no-interaction --no-ansi && sleep 1;
+    php artisan horizon:publish --no-interaction --no-ansi && sleep 1;
+    php artisan telescope:publish --force --no-interaction --no-ansi && sleep 1;
+    php artisan migrate:fresh --force --no-interaction --no-ansi && sleep 1;
+    php artisan db:seed --force --no-interaction --no-ansi && sleep 1;
+    php artisan passport:install --no-interaction --no-ansi && sleep 1;
+    php artisan storage:link --no-interaction --no-ansi && sleep 1;
+    php artisan telescope:publish --force --no-interaction --no-ansi && sleep 1;
   }
 
   #

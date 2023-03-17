@@ -1,27 +1,4 @@
 services:
-  dd-agent:
-    image: gcr.io/datadoghq/agent:7
-    restart: on-failure
-    pid: host
-    cgroup_parent: host
-    env_file:
-      - .env
-    environment:
-      - DD_ENV=${DD_ENV}
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=datadog-agent
-    networks:
-      - processmaker
-    volumes:
-      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/php_fpm.d/conf.yaml:/etc/datadog-agent/conf.d/php_fpm.d/conf.yaml
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/nginx.d/conf.yaml:/etc/datadog-agent/conf.d/nginx.d/conf.yaml
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
-      - /proc/:/host/proc:ro
-      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-    ports:
-      - 8126:8126
-
   installer:
     image: processmaker:${PM_IMAGE_NAME}
     entrypoint: ["/usr/local/bin/installer-entrypoint"]
@@ -77,9 +54,6 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
       - DB_PORT=${DB_PORT}
-      - DD_ENV=${DD_ENV}
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=installer
     tmpfs:
       - /tmp
       - /var/tmp
@@ -101,7 +75,6 @@ services:
     links:
       - mysql
       - redis
-      - dd-agent
     depends_on:
       - mysql
       - redis
@@ -154,10 +127,6 @@ services:
       - 0.0.0.0
     env_file:
       - .env
-    environment:
-      - DD_ENV=${DD_ENV}
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=php-fpm
     build:
       context: .
       args:
@@ -198,7 +167,6 @@ services:
     links:
       - mysql
       - redis
-      - dd-agent
     depends_on:
       - mysql
       - redis
@@ -206,6 +174,11 @@ services:
 
   web:
     image: nginx:stable
+    healthcheck:
+      test: "curl http://processmaker.test/nginx_status || exit 1"
+      interval: 1m
+      retries: 3
+      timeout: 5s
     deploy:
       mode: global
       restart_policy:
@@ -230,10 +203,6 @@ services:
       - 0.0.0.0
     env_file:
       - .env
-    environment:
-      - DD_ENV=${DD_ENV}
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=nginx
     networks:
       - processmaker
     ports:
@@ -254,7 +223,6 @@ services:
     links:
       - mysql
       - redis
-      - dd-agent
     depends_on:
       - mysql
       - redis
@@ -310,10 +278,6 @@ services:
         GITHUB_OAUTH_TOKEN:
     env_file:
       - .env
-    environment:
-      - DD_ENV=${DD_ENV}
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=scheduler
     networks:
       - processmaker
     tmpfs:
@@ -332,7 +296,6 @@ services:
     links:
       - mysql
       - redis
-      - dd-agent
     depends_on:
       - mysql
       - redis
@@ -389,10 +352,6 @@ services:
         GITHUB_OAUTH_TOKEN:
     env_file:
       - .env
-    environment:
-      - DD_ENV=${DD_ENV}
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=echo-server
     networks:
       - processmaker
     tmpfs:
@@ -412,7 +371,6 @@ services:
     links:
       - mysql
       - redis
-      - dd-agent
     depends_on:
       - mysql
       - redis
@@ -474,10 +432,6 @@ services:
         GITHUB_OAUTH_TOKEN:
     env_file:
       - .env
-    environment:
-      - DD_ENV=${DD_ENV}
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=job-queue
     networks:
       - processmaker
     tmpfs:
@@ -501,7 +455,6 @@ services:
     links:
       - mysql
       - redis
-      - dd-agent
     depends_on:
       - mysql
       - redis
@@ -526,16 +479,11 @@ services:
           memory: 3G
     networks:
       - processmaker
-    links:
-      - dd-agent
     ports:
       - ${DB_PORT}:${DB_PORT}
     environment:
       MYSQL_DATABASE: processmaker
       MYSQL_ROOT_PASSWORD: password
-      DD_ENV: ${DD_ENV}
-      DD_VERSION: ${DD_VERSION}
-      DD_SERVICE: mysql
     tmpfs:
       - /tmp
       - /var/tmp
@@ -559,12 +507,6 @@ services:
       - processmaker
     volumes:
       - redis-data:/data
-    links:
-      - dd-agent
-    environment:
-      - DD_ENV=${DD_ENV}
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=redis
 
 volumes:
   app-storage: {}

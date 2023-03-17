@@ -45,5 +45,5 @@
   #
   # 4. Run the entrypoint command
   #
-  bash -c '"$PHP_BINARY" "artisan" horizon --no-interaction --no-ansi';
+  bash -c "$PHP_BINARY artisan horizon --no-interaction --no-ansi";
 }

@@ -6,14 +6,14 @@
   #
   awaitInstallation() {
     #
-    # Check for the app .env and link it
-    # when found, otherwise bail
+    # Check for the requires packages files
+    # to run the echo server
     #
-    if [ ! -f storage/build/.env ]; then
-      echo "App env file not found (env not ready)..."
+    if [ ! -d node_modules ]; then
+      echo "node_modules/ folder not ready (run npm i to install it)..."
       return 1
-    elif [ ! -f storage/build/.installed ]; then
-      echo "ProcessMaker installation not complete.."
+    elif [ ! -f node_modules/.bin/laravel-echo-server ]; then
+      echo "Laravel echo server binary not ready..."
       return 1
     else
       return 0

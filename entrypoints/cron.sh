@@ -45,7 +45,5 @@
   #
   # 3. Run the entrypoint command
   #
-  while php artisan schedule:run --no-interaction --no-ansi; do
-    sleep 60;
-  done
+  bash -c "$PHP_BINARY artisan schedule:work --no-interaction --no-ansi"
 }
