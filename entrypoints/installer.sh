@@ -5,7 +5,7 @@
   # Define this for use later
   #
   if [ -n "$INSTALL_ENTERPRISE_PACKAGES" ]; then
-    export INSTALL_ENTERPRISE_PACKAGES=true
+    export INSTALL_ENTERPRISE_PACKAGES=TRUE
   fi
 
   #
@@ -259,7 +259,7 @@
     #
     # install the ProcessMaker-specific enterprise packages, if desired
     #
-    if [ "$INSTALL_ENTERPRISE_PACKAGES" = true ]; then
+    if [ "$INSTALL_ENTERPRISE_PACKAGES" = TRUE ]; then
       if ! installEnterprisePackages; then
         pm-cli output:error "Could not install enterprise packages" && exit 1;
       else

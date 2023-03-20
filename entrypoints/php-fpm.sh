@@ -23,5 +23,5 @@
   #
   # 3. Run the entrypoint command
   #
-  bash -c "php-fpm8.1 --fpm-config /etc/php/8.1/fpm/php-fpm.conf --nodaemonize --allow-to-run-as-root"
+  bash -c "$PHP_FPM_BINARY --fpm-config /etc/php/$PHP_VERSION/fpm/php-fpm.conf --nodaemonize --allow-to-run-as-root"
 }

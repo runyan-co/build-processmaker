@@ -374,8 +374,8 @@ services:
     depends_on:
       - mysql
       - redis
-      - installer
       - web
+      - php-fpm
 
   queue:
     image: processmaker:${PM_IMAGE_NAME}
@@ -409,7 +409,7 @@ services:
       - 0.0.0.0
     healthcheck:
       test: "php artisan horizon:snapshot || exit 1"
-      interval: 1m
+      interval: 15s
       timeout: 3s
     deploy:
       mode: replicated
