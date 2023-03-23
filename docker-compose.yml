@@ -1,7 +1,9 @@
 services:
   installer:
     image: processmaker:${PM_IMAGE_NAME}
-    entrypoint: ["/usr/local/bin/installer-entrypoint"]
+    entrypoint: ["/usr/bin/installer-entrypoint"]
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
     deploy:
       mode: global
       restart_policy:
@@ -9,6 +11,11 @@ services:
     extra_hosts:
       - 'host.docker.internal:host-gateway'
       - '${PM_DOMAIN}:host-gateway'
+    ulimits:
+      nproc: 65536
+      nofile:
+        soft: 65536
+        hard: 65536
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
       net.ipv4.tcp_syncookies: 1
@@ -81,12 +88,18 @@ services:
 
   php-fpm:
     image: processmaker:${PM_IMAGE_NAME}
-    entrypoint: ["/usr/local/bin/php-fpm-entrypoint"]
-    stop_signal: SIGKILL
+    entrypoint: ["/usr/bin/php-fpm-entrypoint"]
+    stop_signal: SIGTERM
+    stop_grace_period: 5s
     healthcheck:
       test: "curl processmaker.test/ping || exit 1"
       interval: 1m
       timeout: 3s
+    ulimits:
+      nproc: 65536
+      nofile:
+        soft: 65536
+        hard: 65536
     deploy:
       mode: global
       restart_policy:
@@ -172,10 +185,10 @@ services:
       - redis
       - installer
 
-  web:
+  nginx:
     image: nginx:stable
     healthcheck:
-      test: "curl http://processmaker.test/nginx_status || exit 1"
+      test: "curl http://${PM_DOMAIN}/nginx_status || exit 1"
       interval: 1m
       retries: 3
       timeout: 5s
@@ -216,6 +229,11 @@ services:
         target: /var/run/php
         volume:
           nocopy: true
+      - type: volume
+        source: sockets
+        target: /var/run/nginx
+        volume:
+          nocopy: true
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}/public:${PM_DIR}/public:consistent
       - ${PM_BUILD_SOURCE}/stubs/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
@@ -229,13 +247,19 @@ services:
       - installer
       - php-fpm
 
-  cron:
+  scheduler:
     image: processmaker:${PM_IMAGE_NAME}
-    entrypoint: ["/usr/local/bin/cron-entrypoint"]
-    stop_signal: SIGKILL
+    entrypoint: ["/usr/bin/scheduler-entrypoint"]
+    stop_signal: SIGTERM
+    stop_grace_period: 5s
     extra_hosts:
       - 'host.docker.internal:host-gateway'
       - '${PM_DOMAIN}:host-gateway'
+    ulimits:
+      nproc: 65536
+      nofile:
+        soft: 65536
+        hard: 65536
     deploy:
       mode: global
       restart_policy:
@@ -300,17 +324,24 @@ services:
       - mysql
       - redis
       - installer
-      - web
+      - nginx
 
   echo:
     image: processmaker:${PM_IMAGE_NAME}
-    entrypoint: ["/usr/local/bin/echo-entrypoint"]
+    entrypoint: ["/usr/bin/echo-entrypoint"]
+    stop_signal: SIGTERM
+    stop_grace_period: 5s
     deploy:
       mode: global
       restart_policy:
         condition: on-failure
         delay: 0s
         max_attempts: 3
+    ulimits:
+      nproc: 65536
+      nofile:
+        soft: 65536
+        hard: 65536
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
       net.ipv4.tcp_syncookies: 1
@@ -361,27 +392,26 @@ services:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - ${PM_BUILD_SOURCE}/stubs/echo/laravel-echo-server.json:${PM_DIR}/laravel-echo-server.json:ro
-      - ${PM_COMPOSER_PACKAGES_SOURCE_PATH}:/opt/packages:consistent
       - build:${PM_DIR}/storage/build:consistent
-      - app-storage:${PM_DIR}/storage/app:consistent
-      - logs:${PM_DIR}/storage/logs:delegated
-      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
-      - compiled-views:${PM_DIR}/storage/framework/views:delegated
-      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
     links:
       - mysql
       - redis
     depends_on:
       - mysql
       - redis
-      - web
+      - nginx
       - php-fpm
 
   queue:
     image: processmaker:${PM_IMAGE_NAME}
-    entrypoint: ["/usr/local/bin/queue-entrypoint"]
-    stop_signal: SIGKILL
+    entrypoint: ["/usr/bin/queue-entrypoint"]
+    stop_signal: SIGTERM
     stop_grace_period: 5s
+    ulimits:
+      nproc: 65536
+      nofile:
+        soft: 65536
+        hard: 65536
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
       net.ipv4.tcp_syncookies: 1
@@ -409,8 +439,8 @@ services:
       - 0.0.0.0
     healthcheck:
       test: "php artisan horizon:snapshot || exit 1"
-      interval: 15s
-      timeout: 3s
+      interval: 1m
+      timeout: 5s
     deploy:
       mode: replicated
       replicas: 2
@@ -464,6 +494,11 @@ services:
     image: mysql:8
     restart: on-failure
     command: "mysqld --port=${DB_PORT}"
+    ulimits:
+      nproc: 65536
+      nofile:
+        soft: 65536
+        hard: 65536
     healthcheck:
       test: mysqladmin ping -P ${DB_PORT} -u ${DB_USERNAME} -p${DB_PASSWORD} -h ${DB_HOST}
       interval: 15s

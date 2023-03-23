@@ -60,14 +60,14 @@
 
           # Use composer to require the package
           # we want to install
-          composer require "processmaker/$PACKAGE" --no-ansi --no-plugins --no-interaction;
+          composer require "processmaker/$PACKAGE" -v --no-ansi --no-plugins --no-interaction;
 
           # Run the related artisan install command
           # the package provides
-          php artisan "$PACKAGE:install" --no-ansi --no-interaction;
+          php artisan "$PACKAGE:install" -v --no-ansi --no-interaction;
 
           # Publish any assets or files the package provides
-          php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction;
+          php artisan vendor:publish -v --tag="$PACKAGE" --no-ansi --no-interaction;
 
           # Add the installed package to our
           # build dotfile for safekeeping
@@ -75,7 +75,7 @@
         }
       done
 
-      composer dumpautoload -o --no-ansi --no-interaction;
+      composer dumpautoload -o -v --no-ansi --no-interaction;
       pm-cli output:header "Enterprise packages installed";
 
     else
@@ -153,9 +153,10 @@
       --no-scripts \
       --no-plugins \
       --no-ansi \
-      --no-interaction;
+      --no-interaction \
+      -v;
 
-    composer clear-cache --no-ansi --no-interaction;
+    composer clear-cache --no-ansi --no-interaction -v;
   }
 
   #
@@ -285,25 +286,32 @@
   }
 
   #
-  # entrypoint function
+  # installation commands
   #
-  entrypoint() {
-    #
-    # Source a few necessary env variables
-    #
-    sourceDockerEnv;
-
+  install() {
     #
     # If we don't find a linked .env file and this is
     # a web service, then we need to run the
     # app's artisan install command
     #
-    if ! isInstalled; then
-      if ! installProcessMaker | tee -a storage/build/install.log; then
-        pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1;
-      fi
+    if ! installProcessMaker | tee -a storage/build/install.log; then
+      pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1;
     fi
   }
 
-  entrypoint;
+  #
+  # Source a few necessary env variables
+  #
+  sourceDockerEnv;
+
+  #
+  # Check to see if ProcessMaker needs to be
+  # installed and if so, run the commands to
+  # do so. Otherwise, exit
+  #
+  if isInstalled; then
+    pm-cli output:header "ProcessMaker already installed";
+  else
+    install;
+  fi
 }

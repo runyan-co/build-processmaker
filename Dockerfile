@@ -17,6 +17,8 @@ WORKDIR /tmp
 ARG PM_BRANCH
 ARG PM_DOMAIN=localhost
 ARG PM_DIR=/var/www/html
+ARG PM_SETUP_DIR=/opt/setup
+ARG PM_CLI_DIR=/opt/setup/cli
 ARG PM_APP_PORT=8080
 ARG PM_BROADCASTER_PORT=6004
 ARG PM_DOCKER_SOCK=/var/run/docker.sock
@@ -38,27 +40,28 @@ ENV PM_DOMAIN                      ${PM_DOMAIN}
 ENV PM_DOCKER_SOCK                 ${PM_DOCKER_SOCK}
 ENV PM_BRANCH                      ${PM_BRANCH}
 ENV PM_DIR                         ${PM_DIR}
+ENV PM_SETUP_DIR                   ${PM_SETUP_DIR}
+ENV PM_CLI_DIR                     ${PM_CLI_DIR}
 ENV PM_COMPOSER_PACKAGES_PATH      /opt/packages
-ENV PM_SETUP_DIR                   /opt/setup
-ENV PM_CLI_DIR                     /opt/setup/cli
 ENV NVM_DIR                        /root/.nvm
 ENV PM_ENV                         .docker.env
-ENV PHP_BINARY                     "/usr/bin/php$PHP_VERSION"
-ENV PHP_FPM_BINARY                 "/usr/sbin/php-fpm$PHP_VERSION"
-ENV PATH                           "$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH"
-ENV NODE_PATH                      "$NVM_DIR/versions/node/v$NODE_VERSION/lib/node_modules"
-ENV NPX_PATH                       /usr/local/bin/npx
+ENV PHP_BINARY                     "/usr/bin/php${PHP_VERSION}"
+ENV PHP_FPM_BINARY                 "/usr/sbin/php-fpm${PHP_VERSION}"
+ENV PATH                           "${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:${PATH}"
+ENV NODE_PATH                      "${NVM_DIR}/versions/node/v${NODE_VERSION}/lib/node_modules"
+ENV NPX_PATH                       "${NVM_DIR}/versions/node/v${NODE_VERSION}/bin/npx"
 
-COPY stubs/composer/config.json .
+RUN mkdir -p ${PM_CLI_DIR}
+
+COPY cli/ ${PM_CLI_DIR}
+COPY stubs/.env.example ${PM_SETUP_DIR}
+COPY stubs/composer/config.json ${PM_SETUP_DIR}/config.json
+
 COPY stubs/php/${PHP_VERSION}/cli/conf.d /etc/php/${PHP_VERSION}/cli/conf.d
 COPY stubs/php/${PHP_VERSION}/fpm/conf.d /etc/php/${PHP_VERSION}/fpm/conf.d
 COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
 
-COPY entrypoints/php-fpm.sh /usr/local/bin/php-fpm-entrypoint
-COPY entrypoints/queue.sh /usr/local/bin/queue-entrypoint
-COPY entrypoints/installer.sh /usr/local/bin/installer-entrypoint
-COPY entrypoints/echo.sh /usr/local/bin/echo-entrypoint
-COPY entrypoints/cron.sh /usr/local/bin/cron-entrypoint
+COPY --chmod=+x entrypoints/* /usr/bin
 
 #
 # debian package updates and installs
@@ -75,37 +78,37 @@ RUN apt-get update -y && \
             time vim htop curl git zip unzip wget mysql-client pkg-config \
             gcc g++ libmcrypt4 libpcre3-dev make python3 python3-pip \
             whois acl libpng-dev libmagickwand-dev libpcre2-dev jq \
-            net-tools build-essential \
-            php$PHP_VERSION \
-            php$PHP_VERSION-fpm \
-            php$PHP_VERSION-cli \
-            php$PHP_VERSION-common \
-            php$PHP_VERSION-mysql \
-            php$PHP_VERSION-zip \
-            php$PHP_VERSION-gd \
-            php$PHP_VERSION-mbstring \
-            php$PHP_VERSION-curl \
-            php$PHP_VERSION-xml \
-            php$PHP_VERSION-bcmath \
-            php$PHP_VERSION-imagick \
-            php$PHP_VERSION-dom \
-            php$PHP_VERSION-sqlite3 \
-            php$PHP_VERSION-imap \
-            php$PHP_VERSION-redis \
-            php$PHP_VERSION-dev \
-            php$PHP_VERSION-mysql \
-            php$PHP_VERSION-soap \
-            php$PHP_VERSION-intl \
-            php$PHP_VERSION-readline \
-            php$PHP_VERSION-msgpack \
-            php$PHP_VERSION-igbinary \
-            php$PHP_VERSION-gmp && \
+            net-tools build-essential ca-certificates \
+            php${PHP_VERSION} \
+            php${PHP_VERSION}-fpm \
+            php${PHP_VERSION}-cli \
+            php${PHP_VERSION}-common \
+            php${PHP_VERSION}-mysql \
+            php${PHP_VERSION}-zip \
+            php${PHP_VERSION}-gd \
+            php${PHP_VERSION}-mbstring \
+            php${PHP_VERSION}-curl \
+            php${PHP_VERSION}-xml \
+            php${PHP_VERSION}-bcmath \
+            php${PHP_VERSION}-imagick \
+            php${PHP_VERSION}-dom \
+            php${PHP_VERSION}-sqlite3 \
+            php${PHP_VERSION}-imap \
+            php${PHP_VERSION}-redis \
+            php${PHP_VERSION}-dev \
+            php${PHP_VERSION}-mysql \
+            php${PHP_VERSION}-soap \
+            php${PHP_VERSION}-intl \
+            php${PHP_VERSION}-readline \
+            php${PHP_VERSION}-msgpack \
+            php${PHP_VERSION}-igbinary \
+            php${PHP_VERSION}-gmp && \
     git config --global user.name ${GITHUB_USERNAME} && \
     git config --global user.email ${GITHUB_EMAIL} && \
-    setcap "cap_net_bind_service=+ep" /usr/bin/php$PHP_VERSION && \
-    sed -i 's/www-data/root/g' /etc/php/$PHP_VERSION/fpm/pool.d/www.conf && \
+    setcap "cap_net_bind_service=+ep" /usr/bin/php${PHP_VERSION} && \
+    sed -i 's/www-data/root/g' /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf && \
     mkdir -p /run/php && \
-    update-alternatives --set php /usr/bin/php$PHP_VERSION && \
+    update-alternatives --set php /usr/bin/php${PHP_VERSION} && \
     curl -sS https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer && \
     composer config --global github-oauth.github.com ${GITHUB_OAUTH_TOKEN} && \
@@ -113,85 +116,50 @@ RUN apt-get update -y && \
     tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker && \
     rm -f docker-${DOCKERVERSION}.tgz && \
     ln -s /usr/local/bin/docker /usr/bin/docker && \
-    rm -rf "$NVM_DIR" &&  \
-    mkdir -p "$NVM_DIR" && \
-    cp "$HOME/.bashrc" "$HOME/.bashrc.bak" && \
+    rm -rf "${NVM_DIR}" &&  \
+    mkdir -p "${NVM_DIR}" && \
+    cp "${HOME}/.bashrc" "${HOME}/.bashrc.bak" && \
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash && \
-    chmod 0755 "$NVM_DIR/nvm.sh" && \
-    ln -s "$NVM_DIR/nvm.sh" /usr/local/bin/nvm && \
-    nvm install --default --no-progress "$NODE_VERSION" && \
-    ln -s "$NVM_DIR/versions/node/v$NODE_VERSION/bin/node /bin/node" && \
-    ln -s "$NVM_DIR/versions/node/v$NODE_VERSION/bin/npm /bin/npm" && \
-    ln -s "$NVM_DIR/versions/node/v$NODE_VERSION/bin/npx /bin/npx" && \
-    ln -s "$NVM_DIR/versions/node/v$NODE_VERSION/bin/corepack /bin/corepack" && \
-    nvm alias default "$NODE_VERSION" && \
+    chmod 0755 "${NVM_DIR}/nvm.sh" && \
+    ln -s "${NVM_DIR}/nvm.sh" /usr/bin/nvm && \
+    nvm install --default --no-progress "${NODE_VERSION}" && \
+    nvm alias default "${NODE_VERSION}" && \
     nvm use default && \
     nvm cache clear && \
     nvm unload && \
-    cp "$HOME/.bashrc.bak" "$HOME/.bashrc" && \
+    cp "${HOME}/.bashrc.bak" "${HOME}/.bashrc" && \
     composer config --global --list | grep "\[home\]" | awk '{print $2}' > .composer && \
-    mv config.json $(cat .composer) && \
-    rm -rf "$PM_SETUP_DIR" && \
-    mkdir -p "$PM_SETUP_DIR" && \
-    chmod +x /usr/local/bin/php-fpm-entrypoint && \
-    chmod +x /usr/local/bin/queue-entrypoint && \
-    chmod +x /usr/local/bin/installer-entrypoint && \
-    chmod +x /usr/local/bin/echo-entrypoint && \
-    chmod +x /usr/local/bin/cron-entrypoint && \
+    mv ${PM_SETUP_DIR}/config.json $(cat .composer) && \
+    composer --working-dir=${PM_CLI_DIR} install --optimize-autoloader --no-ansi --no-interaction -v && \
+    composer --working-dir=${PM_CLI_DIR} clear-cache --no-ansi --no-interaction -v && \
+    echo "PM_DIRECTORY=${PM_DIR}" > ${PM_CLI_DIR}/.env && \
+    ${PM_CLI_DIR}/pm-cli app:build pm-cli && \
+    mv ${PM_CLI_DIR}/builds/pm-cli /usr/local/bin && \
+    chmod +x /usr/local/bin/pm-cli && \
+    rm -rf ${PM_SETUP_DIR}/cli && \
+    rm -f "/${PM_ENV}" && \
+    touch "/${PM_ENV}" && \
+    chmod -x "/${PM_ENV}" && \
+      { \
+        echo PHP_BINARY=${PHP_BINARY}; \
+        echo PM_COMPOSER_PACKAGES_PATH=${PM_COMPOSER_PACKAGES_PATH}; \
+        echo PM_DIR=${PM_DIR}; \
+        echo PM_CLI_DIR=${PM_CLI_DIR}; \
+        echo PM_SETUP_DIR=${PM_SETUP_DIR}; \
+        echo PM_BRANCH=${PM_BRANCH}; \
+        echo PM_DOCKER_SOCK=${PM_DOCKER_SOCK}; \
+        echo COMPOSER_ALLOW_SUPERUSER=${COMPOSER_ALLOW_SUPERUSER}; \
+        echo NVM_DIR=${NVM_DIR}; \
+        echo NODE_PATH=${NODE_PATH}; \
+        echo NPX_PATH=${NPX_PATH}; \
+      } >"/${PM_ENV}" && \
+    echo "session required pam_limits.so" >>/etc/pam.d/common-session && \
+    sysctl --system && \
     apt-get autoremove -y && \
     apt-get purge -y && \
     apt-get clean && \
-    rm -rf /var/cache/* /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    echo "DefaultLimitNOFILE=65536" >>/etc/systemd/system.conf && \
-    echo "session required pam_limits.so" >>/etc/pam.d/common-session && \
-    echo "root soft nofile 65536" >>/etc/security/limits.conf && \
-    echo "root hard nofile 65536" >>/etc/security/limits.conf && \
-    sysctl --system
+    rm -rf /var/cache/* /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-WORKDIR $PM_SETUP_DIR
-
-#
-# bring over needed config files
-#
-COPY stubs/.env.example .
-
-#
-# install the ProcessMaker-specific cli utility
-#
-COPY cli/ cli/
-
-WORKDIR $PM_CLI_DIR
-
-RUN composer install --optimize-autoloader --no-ansi --no-interaction && \
-    composer clear-cache --no-ansi --no-interaction && \
-    echo "PM_DIRECTORY=$PM_DIR" > .env && \
-    ./pm-cli app:build pm-cli && \
-    mv ./builds/pm-cli /usr/local/bin && \
-    chmod +x /usr/local/bin/pm-cli && \
-    cd .. && rm -rf cli
-
-#
-# add the .env variables into a .env file for use later
-#
-WORKDIR "/"
-
-RUN rm -f "$PM_ENV" && \
-    touch "$PM_ENV" && \
-    chmod -x "$PM_ENV" && \
-    { \
-        echo PHP_BINARY=$PHP_BINARY; \
-        echo PM_COMPOSER_PACKAGES_PATH=$PM_COMPOSER_PACKAGES_PATH; \
-        echo PM_DIR=$PM_DIR; \
-        echo PM_CLI_DIR=$PM_CLI_DIR; \
-        echo PM_SETUP_DIR=$PM_SETUP_DIR; \
-        echo PM_BRANCH=$PM_BRANCH; \
-        echo PM_DOCKER_SOCK=$PM_DOCKER_SOCK; \
-        echo COMPOSER_ALLOW_SUPERUSER=$COMPOSER_ALLOW_SUPERUSER; \
-        echo NVM_DIR=$NVM_DIR; \
-        echo NODE_PATH=$NODE_PATH; \
-        echo NPX_PATH=$NPX_PATH; \
-    } >"$PM_ENV"
-
-WORKDIR $PM_DIR
+WORKDIR ${PM_DIR}
 
 ENTRYPOINT ["/bin/bash"]
