@@ -5,7 +5,7 @@
   # Define this for use later
   #
   if [ -n "$INSTALL_ENTERPRISE_PACKAGES" ]; then
-    export INSTALL_ENTERPRISE_PACKAGES=true
+    export INSTALL_ENTERPRISE_PACKAGES=FALSE
   fi
 
   #
@@ -285,14 +285,9 @@
   }
 
   #
-  # entrypoint function
+  # installation
   #
-  entrypoint() {
-    #
-    # Source a few necessary env variables
-    #
-    sourceDockerEnv;
-
+  install() {
     #
     # If we don't find a linked .env file and this is
     # a web service, then we need to run the
@@ -303,7 +298,20 @@
         pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1;
       fi
     fi
+
+    return 0;
   }
 
-  entrypoint;
+  #
+  # Source a few necessary env variables
+  #
+  sourceDockerEnv;
+
+  #
+  # Run the installation commands if not
+  # installed, otherwise start supervisor
+  #
+  if install; then
+    /usr/bin/supervisord -c /etc/supervisord.conf
+  fi
 }
