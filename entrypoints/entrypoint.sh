@@ -2,13 +2,6 @@
 
 {
   #
-  # Define this for use later
-  #
-  if [ -n "$INSTALL_ENTERPRISE_PACKAGES" ]; then
-    export INSTALL_ENTERPRISE_PACKAGES=FALSE
-  fi
-
-  #
   # Source a few necessary env variables
   #
   sourceDockerEnv() {
@@ -43,44 +36,6 @@
   #
   emptyNodeModulesDir() {
     [ -d ./node_modules ] && rm -rf ./node_modules;
-  }
-
-  #
-  # Installs ProcessMaker enterprise packages
-  #
-  installEnterprisePackages() {
-    PACKAGES_DOTFILE=storage/build/.packages
-
-    if [ ! -f "$PACKAGES_DOTFILE" ]; then
-      for PACKAGE in $(pm-cli packages:list); do
-        {
-          # Let the user know which package is
-          # being installed
-          pm-cli output:header "Installing processmaker/$PACKAGE";
-
-          # Use composer to require the package
-          # we want to install
-          composer require "processmaker/$PACKAGE" --no-ansi --no-plugins --no-interaction;
-
-          # Run the related artisan install command
-          # the package provides
-          php artisan "$PACKAGE:install" --no-ansi --no-interaction;
-
-          # Publish any assets or files the package provides
-          php artisan vendor:publish --tag="$PACKAGE" --no-ansi --no-interaction;
-
-          # Add the installed package to our
-          # build dotfile for safekeeping
-          echo "$PACKAGE" >>"$PACKAGES_DOTFILE";
-        }
-      done
-
-      composer dumpautoload -o --no-ansi --no-interaction;
-      pm-cli output:header "Enterprise packages installed";
-
-    else
-      pm-cli output:header "Enterprise packages already installed";
-    fi
   }
 
   #
@@ -254,29 +209,14 @@
       pm-cli output:error "Could not install ProcessMaker" && exit 1;
     else
       pm-cli output:header "ProcessMaker successfully installed";
+      touch storage/build/.installed;
     fi
-
-    #
-    # install the ProcessMaker-specific enterprise packages, if desired
-    #
-    if [ "$INSTALL_ENTERPRISE_PACKAGES" = true ]; then
-      if ! installEnterprisePackages; then
-        pm-cli output:error "Could not install enterprise packages" && exit 1;
-      else
-        pm-cli output:header "ProcessMaker enterprise packages successfully installed";
-      fi
-    fi
-
-    #
-    # Mark as installed
-    #
-    touch storage/build/.installed;
   }
 
   #
   # ProcessMaker installation status
   #
-  isInstalled() {
+  isProcessMakerInstalled() {
     if [ -f storage/build/.installed ]; then
       return 0;
     else
@@ -293,7 +233,7 @@
     # a web service, then we need to run the
     # app's artisan install command
     #
-    if ! isInstalled; then
+    if ! isProcessMakerInstalled; then
       if ! installProcessMaker | tee -a storage/build/install.log; then
         pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1;
       fi

@@ -51,33 +51,51 @@ ENV PATH                           "${NVM_DIR}/versions/node/v${NODE_VERSION}/bi
 ENV NODE_PATH                      "${NVM_DIR}/versions/node/v${NODE_VERSION}/lib/node_modules"
 ENV NPX_PATH                       "/root/.nvm/versions/node/v${NODE_VERSION}/bin/npx"
 
-RUN mkdir -p ${PM_CLI_DIR}
+RUN mkdir -p /run/php &&  \
+    mkdir -p ${PM_CLI_DIR}
 
 COPY cli/ ${PM_CLI_DIR}
 COPY stubs/.env.example ${PM_SETUP_DIR}
-COPY stubs/composer/config.json ${PM_SETUP_DIR}/global-composer-config.json
+COPY stubs/composer/config.json ${PM_SETUP_DIR}/config.json
 COPY stubs/php/${PHP_VERSION}/cli/conf.d /etc/php/${PHP_VERSION}/cli/conf.d
 COPY stubs/php/${PHP_VERSION}/fpm/conf.d /etc/php/${PHP_VERSION}/fpm/conf.d
 COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
-COPY --chmod=+x entrypoints/entrypoint.sh /usr/local/bin/entrypoint
 
 #
 # debian package updates and installs
 #
-RUN apt-get update -y && \
-    apt-get upgrade -y && \
-    apt-get install -y --force-yes software-properties-common && \
+RUN DEBIAN_FRONTEND=noninteractive && \
     apt-get update -y && \
-    apt-add-repository ppa:ondrej/php -y && \
-    apt-add-repository ppa:ondrej/nginx -y && \
+    apt-get dist-upgrade -y && \
+    apt-get install -y software-properties-common && \
     apt-get update -y && \
-    apt-get install -y --force-yes \
+    apt-add-repository ppa:ondrej/php && \
+    apt-add-repository ppa:ondrej/nginx && \
+    apt-get update -y && \
+    apt-get install -y \
+        --no-install-recommends \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-            time vim htop curl git zip unzip wget mysql-client pkg-config \
-            gcc g++ libmcrypt4 libpcre3-dev make python3 python3-pip \
-            whois acl libpng-dev libmagickwand-dev libpcre2-dev jq \
-            net-tools build-essential ca-certificates nginx supervisor \
+            time vim htop curl git zip \
+            unzip wget mysql-client \
+            pkg-config gcc g++ make \
+            python3 python3-pip jq \
+            whois acl xz-utils net-tools \
+            build-essential ca-certificates \
+            nginx supervisor \
+            libpng-dev \
+            libmagickwand-dev \
+            libpcre2-dev \
+            libmcrypt4 libpcre3-dev \
+            libargon2-dev \
+    		libcurl4-openssl-dev \
+    		libonig-dev \
+    		libreadline-dev \
+    		libsodium-dev \
+    		libsqlite3-dev \
+    		libssl-dev \
+    		libxml2-dev \
+    		zlib1g-dev \
             php${PHP_VERSION} \
             php${PHP_VERSION}-fpm \
             php${PHP_VERSION}-cli \
@@ -102,11 +120,16 @@ RUN apt-get update -y && \
             php${PHP_VERSION}-msgpack \
             php${PHP_VERSION}-igbinary \
             php${PHP_VERSION}-gmp && \
+        apt-get autoremove -y && \
+        apt-get purge -y --auto-remove && \
+        apt-get clean && \
+        rm -rf /var/cache/* /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN DEBIAN_FRONTEND=noninteractive && \
     git config --global user.name ${GITHUB_USERNAME} && \
     git config --global user.email ${GITHUB_EMAIL} && \
     setcap "cap_net_bind_service=+ep" /usr/bin/php${PHP_VERSION} && \
     sed -i 's/www-data/root/g' /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf && \
-    mkdir -p /run/php && \
     update-alternatives --set php /usr/bin/php${PHP_VERSION} && \
     curl -sS https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer && \
@@ -132,7 +155,7 @@ RUN apt-get update -y && \
     nvm unload && \
     cp "${HOME}/.bashrc.bak" "${HOME}/.bashrc" && \
     composer config --global --list | grep "\[home\]" | awk '{print $2}' > .composer && \
-    mv ${PM_SETUP_DIR}/global-composer-config.json $(cat .composer) && \
+    mv ${PM_SETUP_DIR}/config.json $(cat .composer) && \
     cd "${PM_CLI_DIR}" && composer install --optimize-autoloader --no-ansi --no-interaction && \
     cd "${PM_CLI_DIR}" && composer clear-cache --no-ansi --no-interaction && \
     cd "${PM_CLI_DIR}" && echo "PM_DIRECTORY=$PM_DIR" > .env && \
@@ -156,16 +179,23 @@ RUN apt-get update -y && \
         echo NODE_PATH=${NODE_PATH}; \
         echo NPX_PATH=${NPX_PATH}; \
       } >"/${PM_ENV}" && \
-    apt-get autoremove -y && \
-    apt-get purge -y && \
-    apt-get clean && \
-    rm -rf /var/cache/* /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     echo "DefaultLimitNOFILE=65536" >>/etc/systemd/system.conf && \
     echo "session required pam_limits.so" >>/etc/pam.d/common-session && \
     echo "root soft nofile 65536" >>/etc/security/limits.conf && \
     echo "root hard nofile 65536" >>/etc/security/limits.conf && \
     sysctl --system
 
+#
+# DataDog APM Installer (PHP extension)
+#
+RUN DEBIAN_FRONTEND=noninteractive && \
+    curl -LO https://github.com/DataDog/dd-trace-php/releases/latest/download/datadog-setup.php && \
+    php ./datadog-setup.php --enable-profiling --php-bin all && \
+    rm ./datadog-setup.php
+
+COPY --chmod=+x entrypoints/entrypoint.sh /usr/local/bin/entrypoint
+COPY --chmod=+x scripts/install-enterprise-packages.sh /usr/local/bin/install-enterprise-packages
+
 WORKDIR ${PM_DIR}
 
-ENTRYPOINT ["/bin/bash"]
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
