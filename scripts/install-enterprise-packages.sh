@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 {
+  set -e
+
   #
   # ProcessMaker enterprise packages installation status
   #
@@ -62,23 +64,32 @@
   }
 
   #
-  # install the ProcessMaker-specific enterprise packages, if desired
+  # make sure core is installed
   #
-  if isProcessMakerInstalled; then
-    if ! enterprisePackagesInstalled; then
-      php artisan horizon:pause --no-interaction --no-ansi
-      if installEnterprisePackages; then
-        pm-cli output:header "ProcessMaker enterprise packages successfully installed"
-        touch storage/build/.packages-installed
-      else
-        php artisan horizon:continue --no-interaction --no-ansi
-        pm-cli output:error "Could not install enterprise packages" && exit 1
-      fi
-      php artisan horizon:pause --no-interaction --no-ansi
-    else
-      pm-cli output:header "ProcessMaker enterprise packages already installed"
-    fi
+  if ! isProcessMakerInstalled; then
+    pm-cli output:header "ProcessMaker must be installed before installing enterprise packages" && exit 1
+  fi
+
+  #
+  # check if the enterprise packages are already installed
+  #
+  if enterprisePackagesInstalled; then
+    pm-cli output:header "ProcessMaker enterprise packages already installed"
+  fi
+
+  #
+  # attempt to install the enterprise packages
+  #
+  if installEnterprisePackages; then
+    touch storage/build/.packages-installed
+  fi
+
+  #
+  # check for the packages dotfile to verify installation
+  #
+  if [ -f storage/build/.packages-installed ]; then
+    pm-cli output:header "ProcessMaker enterprise packages successfully installed"
   else
-    pm-cli output:header "ProcessMaker must be installed before installing enterprise packages"
+    pm-cli output:error "Could not install enterprise packages" && exit 1
   fi
 }

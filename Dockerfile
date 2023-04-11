@@ -50,8 +50,9 @@ ENV PHP_FPM_BINARY                 "/usr/sbin/php-fpm${PHP_VERSION}"
 ENV PATH                           "${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:${PATH}"
 ENV NODE_PATH                      "${NVM_DIR}/versions/node/v${NODE_VERSION}/lib/node_modules"
 ENV NPX_PATH                       "/root/.nvm/versions/node/v${NODE_VERSION}/bin/npx"
+ENV INSTALL_DD_TRACER              0
 
-RUN mkdir -p /run/php &&  \
+RUN mkdir -p /run/php && \
     mkdir -p ${PM_CLI_DIR}
 
 COPY cli/ ${PM_CLI_DIR}
@@ -66,12 +67,13 @@ COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSIO
 #
 RUN DEBIAN_FRONTEND=noninteractive && \
     apt-get update -y && \
-    apt-get dist-upgrade -y && \
     apt-get install -y software-properties-common && \
     apt-get update -y && \
+    apt-get upgrade -y && \
     apt-add-repository ppa:ondrej/php && \
     apt-add-repository ppa:ondrej/nginx && \
     apt-get update -y && \
+    apt-get upgrade -y && \
     apt-get install -y \
         --no-install-recommends \
         -o Dpkg::Options::="--force-confdef" \
@@ -132,13 +134,12 @@ RUN DEBIAN_FRONTEND=noninteractive && \
     sed -i 's/www-data/root/g' /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf && \
     update-alternatives --set php /usr/bin/php${PHP_VERSION} && \
     curl -sS https://getcomposer.org/installer | php && \
-    mv composer.phar /usr/local/bin/composer && \
+    mv composer.phar /usr/bin/composer && \
     composer config --global github-oauth.github.com ${GITHUB_OAUTH_TOKEN} && \
     curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz && \
-    tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker && \
+    tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/bin docker/docker && \
     rm -f docker-${DOCKERVERSION}.tgz && \
-    ln -s /usr/local/bin/docker /usr/bin/docker && \
-    rm -rf "${NVM_DIR}" &&  \
+    rm -rf "${NVM_DIR}" && \
     mkdir -p "${NVM_DIR}" && \
     cp "${HOME}/.bashrc" "${HOME}/.bashrc.bak" && \
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash && \
@@ -160,8 +161,8 @@ RUN DEBIAN_FRONTEND=noninteractive && \
     cd "${PM_CLI_DIR}" && composer clear-cache --no-ansi --no-interaction && \
     cd "${PM_CLI_DIR}" && echo "PM_DIRECTORY=$PM_DIR" > .env && \
     cd "${PM_CLI_DIR}" && ./pm-cli app:build pm-cli && \
-    cd "${PM_CLI_DIR}" && mv ./builds/pm-cli /usr/local/bin && \
-    cd "${PM_CLI_DIR}" && chmod +x /usr/local/bin/pm-cli && \
+    cd "${PM_CLI_DIR}" && mv ./builds/pm-cli /usr/bin && \
+    cd "${PM_CLI_DIR}" && chmod +x /usr/bin/pm-cli && \
     cd "${PM_SETUP_DIR}" && rm -rf cli && \
     rm -f "/${PM_ENV}" && \
     touch "/${PM_ENV}" && \
@@ -188,14 +189,17 @@ RUN DEBIAN_FRONTEND=noninteractive && \
 #
 # DataDog APM Installer (PHP extension)
 #
-RUN DEBIAN_FRONTEND=noninteractive && \
-    curl -LO https://github.com/DataDog/dd-trace-php/releases/latest/download/datadog-setup.php && \
-    php ./datadog-setup.php --enable-profiling --php-bin all && \
-    rm ./datadog-setup.php
+RUN if ${INSTALL_DD_TRACER}; then \
+      DEBIAN_FRONTEND=noninteractive && \
+      curl -LO https://github.com/DataDog/dd-trace-php/releases/latest/download/datadog-setup.php && \
+      php ./datadog-setup.php --enable-profiling --php-bin all && \
+      rm ./datadog-setup.php; \
+    fi
 
-COPY --chmod=+x entrypoints/entrypoint.sh /usr/local/bin/entrypoint
-COPY --chmod=+x scripts/install-enterprise-packages.sh /usr/local/bin/install-enterprise-packages
+COPY --chmod=+x entrypoints/entrypoint.sh /usr/bin/entrypoint
+COPY --chmod=+x scripts/install-enterprise-packages.sh /usr/bin/install-enterprise-packages
+COPY --chmod=+x scripts/install-processmaker.sh /usr/bin/install-processmaker
 
 WORKDIR ${PM_DIR}
 
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
+ENTRYPOINT ["/usr/bin/entrypoint"]

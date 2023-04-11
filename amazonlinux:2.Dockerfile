@@ -58,7 +58,7 @@ COPY stubs/composer/config.json ${PM_SETUP_DIR}/global-composer-config.json
 COPY stubs/php/${PHP_VERSION}/cli/conf.d /etc/php/${PHP_VERSION}/cli/conf.d
 COPY stubs/php/${PHP_VERSION}/fpm/conf.d /etc/php/${PHP_VERSION}/fpm/conf.d
 COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
-COPY --chmod=+x entrypoints/entrypoint.sh /usr/local/bin/entrypoint
+COPY --chmod=+x entrypoints/entrypoint.sh /usr/bin/entrypoint
 
 #
 # Amazon Linux 2 package updates and installs
@@ -105,12 +105,12 @@ RUN amazon-linux-extras install epel -y && \
     mkdir -p /run/php && \
     update-alternatives --set php /usr/bin/php${PHP_VERSION} && \
     curl -sS https://getcomposer.org/installer | php && \
-    mv composer.phar /usr/local/bin/composer && \
+    mv composer.phar /usr/bin/composer && \
     composer config --global github-oauth.github.com ${GITHUB_OAUTH_TOKEN} && \
     curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz && \
-    tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker && \
+    tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/bin docker/docker && \
     rm -f docker-${DOCKERVERSION}.tgz && \
-    ln -s /usr/local/bin/docker /usr/bin/docker && \
+    ln -s /usr/bin/docker /usr/bin/docker && \
     rm -rf "${NVM_DIR}" &&  \
     mkdir -p "${NVM_DIR}" && \
     cp "${HOME}/.bashrc" "${HOME}/.bashrc.bak" && \
@@ -133,8 +133,8 @@ RUN amazon-linux-extras install epel -y && \
     cd "${PM_CLI_DIR}" && composer clear-cache --no-ansi --no-interaction && \
     cd "${PM_CLI_DIR}" && echo "PM_DIRECTORY=$PM_DIR" > .env && \
     cd "${PM_CLI_DIR}" && ./pm-cli app:build pm-cli && \
-    cd "${PM_CLI_DIR}" && mv ./builds/pm-cli /usr/local/bin && \
-    cd "${PM_CLI_DIR}" && chmod +x /usr/local/bin/pm-cli && \
+    cd "${PM_CLI_DIR}" && mv ./builds/pm-cli /usr/bin && \
+    cd "${PM_CLI_DIR}" && chmod +x /usr/bin/pm-cli && \
     cd "${PM_SETUP_DIR}" && rm -rf cli && \
     rm -f "/${PM_ENV}" && \
     touch "/${PM_ENV}" && \
