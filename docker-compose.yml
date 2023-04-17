@@ -33,6 +33,13 @@ services:
     stop_signal: SIGQUIT
     deploy:
       mode: global
+      resources:
+        reservations:
+          cpus: '2'
+          memory: 2G
+        limits:
+          cpus: '3'
+          memory: 3G
       restart_policy:
         condition: any
         delay: "0"
@@ -135,10 +142,10 @@ services:
       mode: global
       resources:
         reservations:
-          cpus: '1'
-          memory: 1.5G
-        limits:
           cpus: '2'
+          memory: 2G
+        limits:
+          cpus: '2.5'
           memory: 3G
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
@@ -178,6 +185,11 @@ services:
   redis:
     image: redis:7
     restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
     healthcheck:
       test: redis-cli ping --host 0.0.0.0
       interval: 15s

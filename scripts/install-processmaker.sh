@@ -39,7 +39,7 @@
   # setup the .env file(s)
   #
   setupEnvironment() {
-    ENV_REALPATH=storage/build/.env
+    ENV_REALPATH="$PM_DIR/storage/build/.env"
 
     #
     # Create and link the .env file
@@ -100,13 +100,15 @@
     composer install \
       --profile \
       --no-progress \
-      --optimize-autoloader \
-      --no-scripts \
       --no-plugins \
       --no-ansi \
       --no-interaction
 
-    composer clear-cache --no-ansi --no-interaction
+    composer clear-cache \
+      --no-ansi \
+      --no-interaction \
+      --no-plugins \
+      --profile
   }
 
   #
@@ -114,9 +116,9 @@
   #
   npmInstallAndBuild() {
     pm-cli output:header "Installing npm dependencies"
-    npm clean-install --no-audit
+    npm clean-install --force --no-audit && sleep 1
     pm-cli output:header "Compiling npm assets"
-    npm run dev --no-progress
+    npm run dev --no-progress && sleep 1
     npm cache clear --force
   }
 
@@ -124,6 +126,8 @@
   # Run the steps necessary to install the app
   #
   installApplication() {
+    set -e
+
     #
     # Install composer dependencies
     #
@@ -167,9 +171,9 @@
   # were mounted
   #
   restoreDirectories() {
-    restorePublicDirectory
-    restoreAppStorage
-    emptyVendorDir
+    restorePublicDirectory && \
+    restoreAppStorage && \
+    emptyVendorDir && \
     emptyNodeModulesDir
   }
 
@@ -206,15 +210,20 @@
       pm-cli output:error "Could not install ProcessMaker" && exit 1
     fi
 
-    touch storage/build/.installed
-    pm-cli output:header "ProcessMaker successfully installed"
+    #
+    # create the dotfile to indicate ProcessMaker's
+    # is already installed
+    #
+    touch "$PM_DIR/storage/build/.installed"
   }
 
   #
   # run the install and duplicate the
   # output to a log file
   #
-  if ! installProcessMaker | tee -a storage/build/install.log; then
+  if ! installProcessMaker | tee -a "$PM_DIR/storage/build/install.log"; then
     pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1;
+  else
+    pm-cli output:header "ProcessMaker successfully installed"
   fi
 }

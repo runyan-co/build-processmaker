@@ -31,6 +31,7 @@ ARG DOCKERVERSION=20.10.5
 # environment vars
 #
 ENV COMPOSER_ALLOW_SUPERUSER       1
+ENV INSTALL_DD_TRACER              0
 ENV PHP_VERSION                    8.1
 ENV NODE_VERSION                   16.18.1
 ENV DEBIAN_FRONTEND                noninteractive
@@ -50,7 +51,6 @@ ENV PHP_FPM_BINARY                 "/usr/sbin/php-fpm${PHP_VERSION}"
 ENV PATH                           "${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:${PATH}"
 ENV NODE_PATH                      "${NVM_DIR}/versions/node/v${NODE_VERSION}/lib/node_modules"
 ENV NPX_PATH                       "/root/.nvm/versions/node/v${NODE_VERSION}/bin/npx"
-ENV INSTALL_DD_TRACER              0
 
 RUN mkdir -p /run/php && \
     mkdir -p ${PM_CLI_DIR}
@@ -65,8 +65,7 @@ COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSIO
 #
 # debian package updates and installs
 #
-RUN DEBIAN_FRONTEND=noninteractive && \
-    apt-get update -y && \
+RUN apt-get update -y && \
     apt-get install -y software-properties-common && \
     apt-get update -y && \
     apt-get upgrade -y && \
@@ -78,13 +77,19 @@ RUN DEBIAN_FRONTEND=noninteractive && \
         --no-install-recommends \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-            time vim htop curl git zip \
-            unzip wget mysql-client \
-            pkg-config gcc g++ make \
-            python3 python3-pip jq \
-            whois acl xz-utils net-tools \
-            build-essential ca-certificates \
-            nginx supervisor \
+            pkg-config \
+            gcc \
+            g++ \
+            make \
+            python3 \
+            python3-pip \
+            jq \
+            whois \
+            acl \
+            xz-utils \
+            net-tools \
+            build-essential \
+            ca-certificates \
             libpng-dev \
             libmagickwand-dev \
             libpcre2-dev \
@@ -98,6 +103,17 @@ RUN DEBIAN_FRONTEND=noninteractive && \
     		libssl-dev \
     		libxml2-dev \
     		zlib1g-dev \
+            nginx \
+            supervisor \
+            time \
+            vim \
+            htop \
+            curl \
+            git \
+            zip \
+            unzip \
+            wget \
+            mysql-client \
             php${PHP_VERSION} \
             php${PHP_VERSION}-fpm \
             php${PHP_VERSION}-cli \
@@ -122,12 +138,6 @@ RUN DEBIAN_FRONTEND=noninteractive && \
             php${PHP_VERSION}-msgpack \
             php${PHP_VERSION}-igbinary \
             php${PHP_VERSION}-gmp && \
-        apt-get autoremove -y && \
-        apt-get purge -y --auto-remove && \
-        apt-get clean && \
-        rm -rf /var/cache/* /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-RUN DEBIAN_FRONTEND=noninteractive && \
     git config --global user.name ${GITHUB_USERNAME} && \
     git config --global user.email ${GITHUB_EMAIL} && \
     setcap "cap_net_bind_service=+ep" /usr/bin/php${PHP_VERSION} && \
@@ -139,6 +149,11 @@ RUN DEBIAN_FRONTEND=noninteractive && \
     curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz && \
     tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/bin docker/docker && \
     rm -f docker-${DOCKERVERSION}.tgz && \
+    if "$INSTALL_DD_TRACER"; then \
+      curl -LO https://github.com/DataDog/dd-trace-php/releases/latest/download/datadog-setup.php && \
+      php ./datadog-setup.php --enable-profiling --php-bin all && \
+      rm ./datadog-setup.php; \
+    fi && \
     rm -rf "${NVM_DIR}" && \
     mkdir -p "${NVM_DIR}" && \
     cp "${HOME}/.bashrc" "${HOME}/.bashrc.bak" && \
@@ -168,9 +183,9 @@ RUN DEBIAN_FRONTEND=noninteractive && \
     touch "/${PM_ENV}" && \
     chmod -x "/${PM_ENV}" && \
       { \
-        echo PHP_BINARY=$PHP_BINARY; \
-        echo PM_COMPOSER_PACKAGES_PATH=$PM_COMPOSER_PACKAGES_PATH; \
-        echo PM_DIR=$PM_DIR; \
+        echo PHP_BINARY=${PHP_BINARY}; \
+        echo PM_COMPOSER_PACKAGES_PATH=${PM_COMPOSER_PACKAGES_PATH}; \
+        echo PM_DIR=${PM_DIR}; \
         echo PM_CLI_DIR=${PM_CLI_DIR}; \
         echo PM_SETUP_DIR=${PM_SETUP_DIR}; \
         echo PM_BRANCH=${PM_BRANCH}; \
@@ -184,17 +199,11 @@ RUN DEBIAN_FRONTEND=noninteractive && \
     echo "session required pam_limits.so" >>/etc/pam.d/common-session && \
     echo "root soft nofile 65536" >>/etc/security/limits.conf && \
     echo "root hard nofile 65536" >>/etc/security/limits.conf && \
-    sysctl --system
-
-#
-# DataDog APM Installer (PHP extension)
-#
-RUN if ${INSTALL_DD_TRACER}; then \
-      DEBIAN_FRONTEND=noninteractive && \
-      curl -LO https://github.com/DataDog/dd-trace-php/releases/latest/download/datadog-setup.php && \
-      php ./datadog-setup.php --enable-profiling --php-bin all && \
-      rm ./datadog-setup.php; \
-    fi
+    sysctl --system && \
+    apt-get autoremove -y && \
+    apt-get purge -y --auto-remove && \
+    apt-get clean && \
+    rm -rf /var/cache/* /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY --chmod=+x entrypoints/entrypoint.sh /usr/bin/entrypoint
 COPY --chmod=+x scripts/install-enterprise-packages.sh /usr/bin/install-enterprise-packages
