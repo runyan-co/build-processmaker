@@ -31,7 +31,7 @@ ARG DOCKERVERSION=20.10.5
 # environment vars
 #
 ENV COMPOSER_ALLOW_SUPERUSER       1
-ENV INSTALL_DD_TRACER              0
+ENV INSTALL_DD_TRACER              1
 ENV PHP_VERSION                    8.1
 ENV NODE_VERSION                   16.18.1
 ENV DEBIAN_FRONTEND                noninteractive
@@ -149,11 +149,9 @@ RUN apt-get update -y && \
     curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz && \
     tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/bin docker/docker && \
     rm -f docker-${DOCKERVERSION}.tgz && \
-    if "$INSTALL_DD_TRACER"; then \
-      curl -LO https://github.com/DataDog/dd-trace-php/releases/latest/download/datadog-setup.php && \
-      php ./datadog-setup.php --enable-profiling --php-bin all && \
-      rm ./datadog-setup.php; \
-    fi && \
+    curl -LO https://github.com/DataDog/dd-trace-php/releases/latest/download/datadog-setup.php && \
+    php ./datadog-setup.php --enable-profiling --php-bin all && \
+    rm ./datadog-setup.php && \
     rm -rf "${NVM_DIR}" && \
     mkdir -p "${NVM_DIR}" && \
     cp "${HOME}/.bashrc" "${HOME}/.bashrc.bak" && \

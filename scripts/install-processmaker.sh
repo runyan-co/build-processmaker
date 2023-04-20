@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 {
+  set -e
+
   #
   # restore public dir
   #
@@ -126,8 +128,6 @@
   # Run the steps necessary to install the app
   #
   installApplication() {
-    set -e
-
     #
     # Install composer dependencies
     #
@@ -171,9 +171,9 @@
   # were mounted
   #
   restoreDirectories() {
-    restorePublicDirectory && \
-    restoreAppStorage && \
-    emptyVendorDir && \
+    restorePublicDirectory
+    restoreAppStorage
+    emptyVendorDir
     emptyNodeModulesDir
   }
 
@@ -193,7 +193,9 @@
     # replaced by persisted volumes
     # when initialized
     #
-    restoreDirectories
+    if ! restoreDirectories; then
+      pm-cli output:error "Could not restore directories" && exit 1
+    fi
 
     #
     # setup the environment

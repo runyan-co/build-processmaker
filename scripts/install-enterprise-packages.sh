@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-set -e
-
 {
+  set -e
+
   #
   # ProcessMaker enterprise packages installation status
   #

@@ -1,32 +1,35 @@
 services:
-#  datadog-agent:
-#    image: gcr.io/datadoghq/agent:7
-#    restart: on-failure
-#    pid: host
-#    cgroup_parent: host
-#    env_file:
-#      - .env
-#    environment:
-#      - DD_ENV=processmaker-dev
-#      - DD_VERSION=4.5.1
-#      - DD_API_KEY=a11eb4bc764d69b8b4f02f34c021bf5c
-#      - DD_SERVICE=datadog-agent
-#      - DD_SITE=us5.datadoghq.com
-#      - DD_APM_ENABLED=TRUE
-#      - DD_APM_NON_LOCAL_TRAFFIC=TRUE
-#    networks:
-#      - processmaker
-#    volumes:
-#      - type: volume
-#        source: sockets
-#        target: /var/run/supervisord
-#        volume:
-#          nocopy: true
-#      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
-#      - /proc/:/host/proc:ro
-#      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-#    ports:
-#      - 8126:8126
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:7
+    restart: on-failure
+    pid: host
+    cgroup_parent: host
+    env_file:
+      - .env
+    environment:
+      - DD_ENV=docker-desktop-3
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=${DD_SITE}
+      - DD_SERVICE=datadog-agent
+      - DD_APM_ENABLED=TRUE
+      - DD_APM_NON_LOCAL_TRAFFIC=TRUE
+      - DD_LOGS_ENABLED=TRUE
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=TRUE
+      - DD_PROCESS_AGENT_ENABLED=TRUE
+      - DD_CONTAINER_EXCLUDE_LOGS=mysql,redis
+    networks:
+      - processmaker
+    volumes:
+      - type: volume
+        source: sockets
+        target: /var/run/supervisord
+        volume:
+          nocopy: true
+      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
+      - /proc/:/host/proc:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    ports:
+      - 8126:8126
 
   processmaker:
     image: processmaker:${PM_IMAGE_NAME}
@@ -39,7 +42,7 @@ services:
           memory: 2G
         limits:
           cpus: '3'
-          memory: 3G
+          memory: 5G
       restart_policy:
         condition: any
         delay: "0"
@@ -71,9 +74,12 @@ services:
     env_file:
       - .env
     environment:
-      - DD_AGENT_HOST=datadog-agent
-      - DD_VERSION=4.5.1
-      - DD_ENV=processmaker-dev
+      DD_SERVICE: processmaker-app
+      DD_AGENT_HOST: datadog-agent
+      DD_VERSION: develop
+      DD_ENV: docker-desktop-3
+      DD_TRACE_CLI_ENABLED: true
+      DD_PROFILING_ENABLED: true
     build:
       context: .
       args:
@@ -143,10 +149,10 @@ services:
       resources:
         reservations:
           cpus: '2'
-          memory: 2G
-        limits:
-          cpus: '2.5'
           memory: 3G
+        limits:
+          cpus: '3'
+          memory: 5G
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
       net.ipv4.tcp_syncookies: 1
