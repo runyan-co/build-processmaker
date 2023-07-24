@@ -39,7 +39,7 @@
   # 2. Check for maintenance mode and continue when not in
   #    maintenance mode
   until awaitInstallation && checkForMaintenanceMode; do
-    sleep 5;
+    sleep 5
   done
 
   #

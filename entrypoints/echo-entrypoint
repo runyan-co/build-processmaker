@@ -9,10 +9,10 @@
     # Check for the requires packages files
     # to run the echo server
     #
-    if [ ! -d node_modules ]; then
+    if [ ! -d ./node_modules ]; then
       echo "node_modules/ folder not ready (run npm i to install it)..."
       return 1
-    elif [ ! -f node_modules/.bin/laravel-echo-server ]; then
+    elif [ ! -f ./node_modules/.bin/laravel-echo-server ]; then
       echo "Laravel echo server binary not ready..."
       return 1
     else
@@ -24,7 +24,7 @@
   # If the app is in maintenance mode, bail
   #
   checkForMaintenanceMode() {
-    if [ -f storage/framework/maintenance.php ]; then
+    if [ -f ./storage/framework/maintenance.php ]; then
       echo "ProcessMaker in maintenance mode..."
       return 1
     else

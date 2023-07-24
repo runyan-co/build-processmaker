@@ -32,7 +32,7 @@ ARG DOCKERVERSION=20.10.5
 #
 ENV COMPOSER_ALLOW_SUPERUSER       1
 ENV PHP_VERSION                    8.1
-ENV NODE_VERSION                   16.18.1
+ENV NODE_VERSION                   18.13.0
 ENV DEBIAN_FRONTEND                noninteractive
 ENV PM_APP_PORT                    ${PM_APP_PORT}
 ENV PM_BROADCASTER_PORT            ${PM_BROADCASTER_PORT}
@@ -50,6 +50,7 @@ ENV PHP_FPM_BINARY                 "/usr/sbin/php-fpm${PHP_VERSION}"
 ENV PATH                           "${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:${PATH}"
 ENV NODE_PATH                      "${NVM_DIR}/versions/node/v${NODE_VERSION}/lib/node_modules"
 ENV NPX_PATH                       "${NVM_DIR}/versions/node/v${NODE_VERSION}/bin/npx"
+ENV NPM_PATH                       "${NVM_DIR}/versions/node/v${NODE_VERSION}/bin/npm"
 
 RUN mkdir -p ${PM_CLI_DIR}
 
@@ -77,8 +78,8 @@ RUN apt-get update -y && \
         -o Dpkg::Options::="--force-confold" \
             time vim htop curl git zip unzip wget mysql-client pkg-config \
             gcc g++ libmcrypt4 libpcre3-dev make python3 python3-pip \
-            whois acl libpng-dev libmagickwand-dev libpcre2-dev jq \
-            net-tools build-essential ca-certificates \
+            whois acl libpng-dev libmagickwand-dev librdkafka-dev libpcre2-dev \
+            jq net-tools build-essential ca-certificates \
             php${PHP_VERSION} \
             php${PHP_VERSION}-fpm \
             php${PHP_VERSION}-cli \
@@ -103,6 +104,7 @@ RUN apt-get update -y && \
             php${PHP_VERSION}-msgpack \
             php${PHP_VERSION}-igbinary \
             php${PHP_VERSION}-gmp && \
+    pecl install rdkafka && \
     git config --global user.name ${GITHUB_USERNAME} && \
     git config --global user.email ${GITHUB_EMAIL} && \
     setcap "cap_net_bind_service=+ep" /usr/bin/php${PHP_VERSION} && \
@@ -119,7 +121,7 @@ RUN apt-get update -y && \
     rm -rf "${NVM_DIR}" &&  \
     mkdir -p "${NVM_DIR}" && \
     cp "${HOME}/.bashrc" "${HOME}/.bashrc.bak" && \
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash && \
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash && \
     chmod 0755 "${NVM_DIR}/nvm.sh" && \
     ln -s "${NVM_DIR}/nvm.sh" /usr/bin/nvm && \
     nvm install --default --no-progress "${NODE_VERSION}" && \
@@ -128,6 +130,8 @@ RUN apt-get update -y && \
     nvm cache clear && \
     nvm unload && \
     cp "${HOME}/.bashrc.bak" "${HOME}/.bashrc" && \
+    ln -s ${NPX_PATH} /usr/bin/npx && \
+    ln -s ${NPM_PATH} /usr/bin/npm && \
     composer config --global --list | grep "\[home\]" | awk '{print $2}' > .composer && \
     mv ${PM_SETUP_DIR}/config.json $(cat .composer) && \
     composer --working-dir=${PM_CLI_DIR} install --optimize-autoloader --no-ansi --no-interaction -v && \
@@ -152,6 +156,7 @@ RUN apt-get update -y && \
         echo NVM_DIR=${NVM_DIR}; \
         echo NODE_PATH=${NODE_PATH}; \
         echo NPX_PATH=${NPX_PATH}; \
+        echo NPM_PATH=${NPM_PATH}; \
       } >"/${PM_ENV}" && \
     echo "session required pam_limits.so" >>/etc/pam.d/common-session && \
     sysctl --system && \

@@ -5,7 +5,7 @@
   # Define this for use later
   #
   if [ -n "$INSTALL_ENTERPRISE_PACKAGES" ]; then
-    export INSTALL_ENTERPRISE_PACKAGES=TRUE
+    export INSTALL_ENTERPRISE_PACKAGES=FALSE
   fi
 
   #
@@ -35,14 +35,18 @@
   # empty the ./vendor directory
   #
   emptyVendorDir() {
-    [ -d ./vendor ] && rm -rf ./vendor;
+    if [ -d ./vendor ]; then
+      rm -rf ./vendor;
+    fi
   }
 
   #
   # empty the ./node_modules directory
   #
   emptyNodeModulesDir() {
-    [ -d ./node_modules ] && rm -rf ./node_modules;
+    if [ -d ./node_modules ]; then
+      rm -rf ./node_modules;
+    fi
   }
 
   #
@@ -150,13 +154,11 @@
     composer install \
       --no-progress \
       --optimize-autoloader \
-      --no-scripts \
       --no-plugins \
       --no-ansi \
-      --no-interaction \
-      -v;
+      --no-interaction;
 
-    composer clear-cache --no-ansi --no-interaction -v;
+    composer clear-cache --no-ansi --no-interaction;
   }
 
   #
@@ -164,10 +166,10 @@
   #
   npmInstallAndBuild() {
     pm-cli output:header "Installing npm dependencies";
-    npm clean-install --no-audit;
+    bash -c "$NPM_PATH install --force --no-audit";
     pm-cli output:header "Compiling npm assets";
-    npm run dev --no-progress;
-    npm cache clear --force;
+    bash -c "$NPM_PATH run dev --no-progress";
+    bash -c "$NPM_PATH cache clear --force";
   }
 
   #
@@ -175,17 +177,17 @@
   #
   installApplication() {
     #
-    # Install composer dependencies
+    # Install npm dependencies and run build
     #
-    if ! installComposerDeps; then
-      pm-cli output:error "Error while installing composer dependencies" && exit 1;
+    if ! npmInstallAndBuild && sleep 5; then
+      pm-cli output:error "Error while installing npm dependencies or building assets" && exit 1;
     fi
 
     #
-    # Install npm dependencies and run build
+    # Install composer dependencies
     #
-    if ! npmInstallAndBuild; then
-      pm-cli output:error "Error while installing npm dependencies or building assets" && exit 1;
+    if ! installComposerDeps && sleep 5; then
+      pm-cli output:error "Error while installing composer dependencies" && exit 1;
     fi
 
     #
@@ -218,10 +220,10 @@
   # were mounted
   #
   restoreDirectories() {
-    restorePublicDirectory;
-    restoreAppStorage;
-    emptyVendorDir;
-    emptyNodeModulesDir;
+    restorePublicDirectory
+    restoreAppStorage
+    emptyVendorDir
+    emptyNodeModulesDir
   }
 
   #
@@ -286,23 +288,9 @@
   }
 
   #
-  # installation commands
-  #
-  install() {
-    #
-    # If we don't find a linked .env file and this is
-    # a web service, then we need to run the
-    # app's artisan install command
-    #
-    if ! installProcessMaker | tee -a storage/build/install.log; then
-      pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1;
-    fi
-  }
-
-  #
   # Source a few necessary env variables
   #
-  sourceDockerEnv;
+  sourceDockerEnv
 
   #
   # Check to see if ProcessMaker needs to be
@@ -312,6 +300,13 @@
   if isInstalled; then
     pm-cli output:header "ProcessMaker already installed";
   else
-    install;
+    #
+    # If we don't find a linked .env file and this is
+    # a web service, then we need to run the
+    # app's artisan install command
+    #
+    if ! installProcessMaker | tee -a storage/build/install.log; then
+      pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1;
+    fi
   fi
 }
