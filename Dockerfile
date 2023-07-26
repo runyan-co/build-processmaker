@@ -152,8 +152,8 @@ COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSIO
 # copy a script which installs the datadog
 # APM tracer/profiler for PHP and Node
 #
-COPY scripts/install-dd-tracer.sh .
-RUN bash install-dd-tracer.sh
+#COPY scripts/install-dd-tracer.sh .
+#RUN bash install-dd-tracer.sh
 
 WORKDIR ${PM_DIR}
 

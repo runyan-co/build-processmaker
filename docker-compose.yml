@@ -1,27 +1,27 @@
 services:
-  dd-agent:
-    image: gcr.io/datadoghq/agent:7
-    restart: on-failure
-    pid: host
-    cgroup_parent: host
-    env_file:
-      - .env
-    environment:
-      - DD_ENV=${DD_ENV}
-      - DD_API_KEY=${DD_API_KEY}
-      - DD_SITE=${DD_SITE}
-      - DD_SERVICE=datadog-agent
-    networks:
-      - processmaker
-    volumes:
-      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/php_fpm.d/conf.yaml:/etc/datadog-agent/conf.d/php_fpm.d/conf.yaml
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/nginx.d/conf.yaml:/etc/datadog-agent/conf.d/nginx.d/conf.yaml
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
-      - /proc/:/host/proc:ro
-      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-    ports:
-      - 8126:8126
+#  dd-agent:
+#    image: gcr.io/datadoghq/agent:7
+#    restart: on-failure
+#    pid: host
+#    cgroup_parent: host
+#    env_file:
+#      - .env
+#    environment:
+#      - DD_ENV=${DD_ENV}
+#      - DD_API_KEY=${DD_API_KEY}
+#      - DD_SITE=${DD_SITE}
+#      - DD_SERVICE=datadog-agent
+#    networks:
+#      - processmaker
+#    volumes:
+#      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
+#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/php_fpm.d/conf.yaml:/etc/datadog-agent/conf.d/php_fpm.d/conf.yaml
+#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/nginx.d/conf.yaml:/etc/datadog-agent/conf.d/nginx.d/conf.yaml
+#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
+#      - /proc/:/host/proc:ro
+#      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+#    ports:
+#      - 8126:8126
 
   installer:
     image: processmaker:${PM_IMAGE_NAME}
