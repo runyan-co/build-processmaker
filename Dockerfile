@@ -32,7 +32,7 @@ ARG DOCKERVERSION=20.10.5
 #
 ENV COMPOSER_ALLOW_SUPERUSER       1
 ENV PHP_VERSION                    8.1
-ENV NODE_VERSION                   18.13.0
+ENV NODE_VERSION                   16
 ENV DEBIAN_FRONTEND                noninteractive
 ENV PM_APP_PORT                    ${PM_APP_PORT}
 ENV PM_BROADCASTER_PORT            ${PM_BROADCASTER_PORT}
@@ -43,25 +43,15 @@ ENV PM_DIR                         ${PM_DIR}
 ENV PM_SETUP_DIR                   ${PM_SETUP_DIR}
 ENV PM_CLI_DIR                     ${PM_CLI_DIR}
 ENV PM_COMPOSER_PACKAGES_PATH      /opt/packages
-ENV NVM_DIR                        /root/.nvm
 ENV PM_ENV                         .docker.env
 ENV PHP_BINARY                     "/usr/bin/php${PHP_VERSION}"
 ENV PHP_FPM_BINARY                 "/usr/sbin/php-fpm${PHP_VERSION}"
-ENV PATH                           "${NVM_DIR}/versions/node/v${NODE_VERSION}/bin:${PATH}"
-ENV NODE_PATH                      "${NVM_DIR}/versions/node/v${NODE_VERSION}/lib/node_modules"
-ENV NPX_PATH                       "${NVM_DIR}/versions/node/v${NODE_VERSION}/bin/npx"
-ENV NPM_PATH                       "${NVM_DIR}/versions/node/v${NODE_VERSION}/bin/npm"
 
 RUN mkdir -p ${PM_CLI_DIR}
 
 COPY cli/ ${PM_CLI_DIR}
 COPY stubs/.env.example ${PM_SETUP_DIR}
 COPY stubs/composer/config.json ${PM_SETUP_DIR}/config.json
-
-COPY stubs/php/${PHP_VERSION}/cli/conf.d /etc/php/${PHP_VERSION}/cli/conf.d
-COPY stubs/php/${PHP_VERSION}/fpm/conf.d /etc/php/${PHP_VERSION}/fpm/conf.d
-COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
-
 COPY --chmod=+x entrypoints/* /usr/bin
 
 #
@@ -69,17 +59,18 @@ COPY --chmod=+x entrypoints/* /usr/bin
 #
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install -y --force-yes software-properties-common && \
+    apt-get install -y --force-yes software-properties-common curl && \
+    curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash && \
     apt-get update -y && \
     apt-add-repository ppa:ondrej/php -y && \
     apt-get update -y && \
     apt-get install -y --force-yes \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-            time vim htop curl git zip unzip wget mysql-client pkg-config \
+            time vim htop git zip unzip wget mysql-client pkg-config \
             gcc g++ libmcrypt4 libpcre3-dev make python3 python3-pip \
             whois acl libpng-dev libmagickwand-dev librdkafka-dev libpcre2-dev \
-            jq net-tools build-essential ca-certificates \
+            jq net-tools build-essential ca-certificates nodejs \
             php${PHP_VERSION} \
             php${PHP_VERSION}-fpm \
             php${PHP_VERSION}-cli \
@@ -118,20 +109,6 @@ RUN apt-get update -y && \
     tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker && \
     rm -f docker-${DOCKERVERSION}.tgz && \
     ln -s /usr/local/bin/docker /usr/bin/docker && \
-    rm -rf "${NVM_DIR}" &&  \
-    mkdir -p "${NVM_DIR}" && \
-    cp "${HOME}/.bashrc" "${HOME}/.bashrc.bak" && \
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash && \
-    chmod 0755 "${NVM_DIR}/nvm.sh" && \
-    ln -s "${NVM_DIR}/nvm.sh" /usr/bin/nvm && \
-    nvm install --default --no-progress "${NODE_VERSION}" && \
-    nvm alias default "${NODE_VERSION}" && \
-    nvm use default && \
-    nvm cache clear && \
-    nvm unload && \
-    cp "${HOME}/.bashrc.bak" "${HOME}/.bashrc" && \
-    ln -s ${NPX_PATH} /usr/bin/npx && \
-    ln -s ${NPM_PATH} /usr/bin/npm && \
     composer config --global --list | grep "\[home\]" | awk '{print $2}' > .composer && \
     mv ${PM_SETUP_DIR}/config.json $(cat .composer) && \
     composer --working-dir=${PM_CLI_DIR} install --optimize-autoloader --no-ansi --no-interaction -v && \
@@ -153,10 +130,9 @@ RUN apt-get update -y && \
         echo PM_BRANCH=${PM_BRANCH}; \
         echo PM_DOCKER_SOCK=${PM_DOCKER_SOCK}; \
         echo COMPOSER_ALLOW_SUPERUSER=${COMPOSER_ALLOW_SUPERUSER}; \
-        echo NVM_DIR=${NVM_DIR}; \
-        echo NODE_PATH=${NODE_PATH}; \
-        echo NPX_PATH=${NPX_PATH}; \
-        echo NPM_PATH=${NPM_PATH}; \
+        echo NODE_PATH=$(which node); \
+        echo NPX_PATH=$(which npx); \
+        echo NPM_PATH=$(which npm); \
       } >"/${PM_ENV}" && \
     echo "session required pam_limits.so" >>/etc/pam.d/common-session && \
     sysctl --system && \
@@ -164,6 +140,20 @@ RUN apt-get update -y && \
     apt-get purge -y && \
     apt-get clean && \
     rm -rf /var/cache/* /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+#
+# copy php config files
+#
+COPY stubs/php/${PHP_VERSION}/cli/conf.d /etc/php/${PHP_VERSION}/cli/conf.d
+COPY stubs/php/${PHP_VERSION}/fpm/conf.d /etc/php/${PHP_VERSION}/fpm/conf.d
+COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
+
+#
+# copy a script which installs the datadog
+# APM tracer/profiler for PHP and Node
+#
+COPY scripts/install-dd-tracer.sh .
+RUN bash install-dd-tracer.sh
 
 WORKDIR ${PM_DIR}
 

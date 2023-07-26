@@ -1,4 +1,28 @@
 services:
+  dd-agent:
+    image: gcr.io/datadoghq/agent:7
+    restart: on-failure
+    pid: host
+    cgroup_parent: host
+    env_file:
+      - .env
+    environment:
+      - DD_ENV=${DD_ENV}
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=${DD_SITE}
+      - DD_SERVICE=datadog-agent
+    networks:
+      - processmaker
+    volumes:
+      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
+      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/php_fpm.d/conf.yaml:/etc/datadog-agent/conf.d/php_fpm.d/conf.yaml
+      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/nginx.d/conf.yaml:/etc/datadog-agent/conf.d/nginx.d/conf.yaml
+      - ${PM_BUILD_SOURCE}/stubs/dd-agent/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
+      - /proc/:/host/proc:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    ports:
+      - 8126:8126
+
   installer:
     image: processmaker:${PM_IMAGE_NAME}
     entrypoint: ["/usr/bin/installer-entrypoint"]
@@ -57,6 +81,9 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_DATABASE=${DB_DATABASE}
       - DB_PORT=${DB_PORT}
+      - DD_ENV=${DD_ENV}
+      - DD_VERSION=${DD_VERSION}
+      - DD_SERVICE=installer
     tmpfs:
       - /tmp
       - /var/tmp
@@ -136,6 +163,10 @@ services:
       - 0.0.0.0
     env_file:
       - .env
+    environment:
+      - DD_ENV=${DD_ENV}
+      - DD_VERSION=${DD_VERSION}
+      - DD_SERVICE=web
     build:
       context: .
       args:
@@ -212,6 +243,10 @@ services:
       - 0.0.0.0
     env_file:
       - .env
+    environment:
+      - DD_ENV=${DD_ENV}
+      - DD_VERSION=${DD_VERSION}
+      - DD_SERVICE=http-entrypoint
     networks:
       - processmaker
     ports:
@@ -297,6 +332,10 @@ services:
         GITHUB_OAUTH_TOKEN:
     env_file:
       - .env
+    environment:
+      - DD_ENV=${DD_ENV}
+      - DD_VERSION=${DD_VERSION}
+      - DD_SERVICE=scheduler
     networks:
       - processmaker
     tmpfs:
@@ -378,6 +417,10 @@ services:
         GITHUB_OAUTH_TOKEN:
     env_file:
       - .env
+    environment:
+      - DD_ENV=${DD_ENV}
+      - DD_VERSION=${DD_VERSION}
+      - DD_SERVICE=realtime-events
     networks:
       - processmaker
     tmpfs:
@@ -458,6 +501,10 @@ services:
         GITHUB_OAUTH_TOKEN:
     env_file:
       - .env
+    environment:
+      - DD_ENV=${DD_ENV}
+      - DD_VERSION=${DD_VERSION}
+      - DD_SERVICE=job-queue
     networks:
       - processmaker
     tmpfs:
@@ -515,6 +562,9 @@ services:
     environment:
       MYSQL_DATABASE: processmaker
       MYSQL_ROOT_PASSWORD: password
+      DD_ENV: ${DD_ENV}
+      DD_VERSION: ${DD_VERSION}
+      DD_SERVICE: database-host
     tmpfs:
       - /tmp
       - /var/tmp
@@ -538,6 +588,10 @@ services:
       - processmaker
     volumes:
       - redis-data:/data
+    environment:
+      - DD_ENV=${DD_ENV}
+      - DD_VERSION=${DD_VERSION}
+      - DD_SERVICE=cache
 
 volumes:
   app-storage: {}

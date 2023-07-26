@@ -5,7 +5,7 @@
   # Define this for use later
   #
   if [ -n "$INSTALL_ENTERPRISE_PACKAGES" ]; then
-    export INSTALL_ENTERPRISE_PACKAGES=FALSE
+    export INSTALL_ENTERPRISE_PACKAGES=TRUE
   fi
 
   #
@@ -166,10 +166,10 @@
   #
   npmInstallAndBuild() {
     pm-cli output:header "Installing npm dependencies";
-    bash -c "$NPM_PATH install --force --no-audit";
+    npm ci --no-audit --force;
     pm-cli output:header "Compiling npm assets";
-    bash -c "$NPM_PATH run dev --no-progress";
-    bash -c "$NPM_PATH cache clear --force";
+    npm run dev --no-progress;
+    npm cache clear --force;
   }
 
   #
@@ -298,7 +298,7 @@
   # do so. Otherwise, exit
   #
   if isInstalled; then
-    pm-cli output:header "ProcessMaker already installed";
+    pm-cli output:header "ProcessMaker already installed" && exit 0;
   else
     #
     # If we don't find a linked .env file and this is
