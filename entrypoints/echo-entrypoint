@@ -15,6 +15,9 @@
     elif [ ! -f ./node_modules/.bin/laravel-echo-server ]; then
       echo "Laravel echo server binary not ready..."
       return 1
+    elif [ ! -f storage/build/.installed ]; then
+      echo "ProcessMaker installation not complete.."
+      return 1
     else
       return 0
     fi

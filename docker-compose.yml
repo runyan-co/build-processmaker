@@ -1,27 +1,30 @@
 services:
-  dd-agent:
-    image: gcr.io/datadoghq/agent:7
-    restart: on-failure
-    pid: host
-    cgroup_parent: host
-    env_file:
-      - .env
-    environment:
-      - DD_ENV=${DD_ENV}
-      - DD_API_KEY=${DD_API_KEY}
-      - DD_SITE=${DD_SITE}
-      - DD_SERVICE=datadog-agent
-    networks:
-      - processmaker
-    volumes:
-      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/php_fpm.d/conf.yaml:/etc/datadog-agent/conf.d/php_fpm.d/conf.yaml
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/nginx.d/conf.yaml:/etc/datadog-agent/conf.d/nginx.d/conf.yaml
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
-      - /proc/:/host/proc:ro
-      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-    ports:
-      - 8126:8126
+#  dd-agent:
+#    image: gcr.io/datadoghq/agent:7
+#    restart: on-failure
+#    pid: host
+#    cgroup_parent: host
+#    env_file:
+#      - .env
+#    environment:
+#      - DD_ENV=${DD_ENV}
+#      - DD_API_KEY=${DD_API_KEY}
+#      - DD_SITE=${DD_SITE}
+#      - DD_SERVICE=dd-agent
+#      - DD_LOGS_ENABLED=true
+#      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+#      - DD_CONTAINER_EXCLUDE_LOGS="name:dd-agent"
+#    networks:
+#      - processmaker
+#    volumes:
+#      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
+#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/php_fpm.d/conf.yaml:/etc/datadog-agent/conf.d/php_fpm.d/conf.yaml
+#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/nginx.d/conf.yaml:/etc/datadog-agent/conf.d/nginx.d/conf.yaml
+#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/datadog.yaml:/etc/datadog-agent/datadog.yaml:ro
+#      - /proc/:/host/proc:ro
+#      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+#    ports:
+#      - 8126:8126
 
   installer:
     image: processmaker:${PM_IMAGE_NAME}
@@ -84,9 +87,10 @@ services:
       - DD_ENV=${DD_ENV}
       - DD_VERSION=${DD_VERSION}
       - DD_SERVICE=installer
-    tmpfs:
-      - /tmp
-      - /var/tmp
+      - DD_AGENT_HOST=dd-agent
+      - DD_TRACE_CLI_ENABLED=1
+      - DD_INSTRUMENTATION_TELEMETRY_ENABLED=0
+      - DD_LOGS_INJECTION=1
     volumes:
       - type: volume
         source: sockets
@@ -128,7 +132,7 @@ services:
       restart_policy:
         condition: on-failure
         max_attempts: 3
-        delay: 0s
+        delay: 3s
       resources:
         reservations:
           cpus: '0.66'
@@ -167,6 +171,10 @@ services:
       - DD_ENV=${DD_ENV}
       - DD_VERSION=${DD_VERSION}
       - DD_SERVICE=web
+      - DD_AGENT_HOST=dd-agent
+      - DD_TRACE_CLI_ENABLED=1
+      - DD_INSTRUMENTATION_TELEMETRY_ENABLED=0
+      - DD_LOGS_INJECTION=1
     build:
       context: .
       args:
@@ -181,9 +189,6 @@ services:
         GITHUB_OAUTH_TOKEN:
     networks:
       - processmaker
-    tmpfs:
-      - /tmp
-      - /var/tmp
     volumes:
       - type: volume
         source: sockets
@@ -223,7 +228,7 @@ services:
       mode: global
       restart_policy:
         condition: on-failure
-        delay: 0s
+        delay: 3s
         max_attempts: 3
       resources:
         reservations:
@@ -247,13 +252,13 @@ services:
       - DD_ENV=${DD_ENV}
       - DD_VERSION=${DD_VERSION}
       - DD_SERVICE=http-entrypoint
+      - DD_AGENT_HOST=dd-agent
+      - DD_INSTRUMENTATION_TELEMETRY_ENABLED=0
+      - DD_LOGS_INJECTION=1
     networks:
       - processmaker
     ports:
       - ${PM_APP_PORT}:80
-    tmpfs:
-      - /tmp
-      - /var/tmp
     volumes:
       - type: volume
         source: sockets
@@ -294,7 +299,7 @@ services:
       mode: global
       restart_policy:
         condition: on-failure
-        delay: 0s
+        delay: 3s
         max_attempts: 3
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
@@ -336,11 +341,12 @@ services:
       - DD_ENV=${DD_ENV}
       - DD_VERSION=${DD_VERSION}
       - DD_SERVICE=scheduler
+      - DD_AGENT_HOST=dd-agent
+      - DD_TRACE_CLI_ENABLED=1
+      - DD_INSTRUMENTATION_TELEMETRY_ENABLED=0
+      - DD_LOGS_INJECTION=1
     networks:
       - processmaker
-    tmpfs:
-      - /tmp
-      - /var/tmp
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
@@ -369,7 +375,7 @@ services:
       mode: global
       restart_policy:
         condition: on-failure
-        delay: 0s
+        delay: 3s
         max_attempts: 3
     ulimits:
       nproc: 65536
@@ -421,11 +427,12 @@ services:
       - DD_ENV=${DD_ENV}
       - DD_VERSION=${DD_VERSION}
       - DD_SERVICE=realtime-events
+      - DD_AGENT_HOST=dd-agent
+      - DD_TRACE_CLI_ENABLED=1
+      - DD_INSTRUMENTATION_TELEMETRY_ENABLED=0
+      - DD_LOGS_INJECTION=1
     networks:
       - processmaker
-    tmpfs:
-      - /tmp
-      - /var/tmp
     volumes:
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
@@ -485,7 +492,7 @@ services:
       replicas: 2
       restart_policy:
         condition: on-failure
-        delay: 0s
+        delay: 3s
         max_attempts: 3
     build:
       context: .
@@ -505,11 +512,16 @@ services:
       - DD_ENV=${DD_ENV}
       - DD_VERSION=${DD_VERSION}
       - DD_SERVICE=job-queue
+      - DD_AGENT_HOST=dd-agent
+      - DD_TRACE_CLI_ENABLED=1
+      - DD_TRACE_AUTO_FLUSH_ENABLED=1
+      - DD_AUTOFINISH_SPANS=1
+      - DD_LOGS_INJECTION=1
+      - DD_PROFILING_EXPERIMENTAL_TIMELINE_ENABLED=1
+      - DD_INSTRUMENTATION_TELEMETRY_ENABLED=0
+      - DD_SERVICE_MAPPING=laravelqueue:job-queue
     networks:
       - processmaker
-    tmpfs:
-      - /tmp
-      - /var/tmp
     volumes:
       - type: volume
         source: sockets
@@ -565,9 +577,7 @@ services:
       DD_ENV: ${DD_ENV}
       DD_VERSION: ${DD_VERSION}
       DD_SERVICE: database-host
-    tmpfs:
-      - /tmp
-      - /var/tmp
+      DD_AGENT_HOST: dd-agent
     volumes:
       - type: volume
         source: sockets
@@ -592,6 +602,7 @@ services:
       - DD_ENV=${DD_ENV}
       - DD_VERSION=${DD_VERSION}
       - DD_SERVICE=cache
+      - DD_AGENT_HOST=dd-agent
 
 volumes:
   app-storage: {}

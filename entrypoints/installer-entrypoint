@@ -18,13 +18,6 @@
   }
 
   #
-  # restore public dir
-  #
-  restorePublicDirectory() {
-    git restore ./public;
-  }
-
-  #
   # restore app-specific storage dir
   #
   restoreAppStorage() {
@@ -37,15 +30,6 @@
   emptyVendorDir() {
     if [ -d ./vendor ]; then
       rm -rf ./vendor;
-    fi
-  }
-
-  #
-  # empty the ./node_modules directory
-  #
-  emptyNodeModulesDir() {
-    if [ -d ./node_modules ]; then
-      rm -rf ./node_modules;
     fi
   }
 
@@ -173,15 +157,23 @@
   }
 
   #
+  # smoke test to make sure everything is working
+  #
+  smokeTest() {
+    curl "http://$PM_DOMAIN" || exit 1
+    php artisan telescope:continue --no-ansi --no-interaction && exit 0;
+  }
+
+  #
   # Run the steps necessary to install the app
   #
   installApplication() {
     #
     # Install npm dependencies and run build
     #
-    if ! npmInstallAndBuild && sleep 5; then
-      pm-cli output:error "Error while installing npm dependencies or building assets" && exit 1;
-    fi
+#    if ! npmInstallAndBuild && sleep 5; then
+#      pm-cli output:error "Error while installing npm dependencies or building assets" && exit 1;
+#    fi
 
     #
     # Install composer dependencies
@@ -203,6 +195,7 @@
     php artisan passport:install --no-interaction --no-ansi && sleep 1;
     php artisan storage:link --no-interaction --no-ansi && sleep 1;
     php artisan telescope:publish --force --no-interaction --no-ansi && sleep 1;
+    php artisan telescope:pause && sleep 1;
   }
 
   #
@@ -220,10 +213,8 @@
   # were mounted
   #
   restoreDirectories() {
-    restorePublicDirectory
     restoreAppStorage
     emptyVendorDir
-    emptyNodeModulesDir
   }
 
   #
@@ -309,4 +300,10 @@
       pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1;
     fi
   fi
+
+  #
+  # run a quick smoke test by making a
+  # simple HTTP call to the frontend
+  #
+  smokeTest;
 }

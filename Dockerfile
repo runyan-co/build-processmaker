@@ -47,8 +47,6 @@ ENV PM_ENV                         .docker.env
 ENV PHP_BINARY                     "/usr/bin/php${PHP_VERSION}"
 ENV PHP_FPM_BINARY                 "/usr/sbin/php-fpm${PHP_VERSION}"
 
-RUN mkdir -p ${PM_CLI_DIR}
-
 COPY cli/ ${PM_CLI_DIR}
 COPY stubs/.env.example ${PM_SETUP_DIR}
 COPY stubs/composer/config.json ${PM_SETUP_DIR}/config.json
@@ -153,7 +151,7 @@ COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSIO
 # APM tracer/profiler for PHP and Node
 #
 COPY scripts/install-dd-tracer.sh .
-RUN bash install-dd-tracer.sh
+#RUN bash install-dd-tracer.sh
 
 WORKDIR ${PM_DIR}
 
