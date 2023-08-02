@@ -489,11 +489,11 @@ services:
       timeout: 5s
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 1
       restart_policy:
-        condition: on-failure
-        delay: 3s
-        max_attempts: 3
+        condition: always
+        delay: 0s
+        max_attempts: 0
     build:
       context: .
       args:

@@ -38,37 +38,44 @@
   #
   installEnterprisePackages() {
     PACKAGES_DOTFILE=storage/build/.packages
+    PACKAGES_COUNT=$(pm-cli packages:list | wc -l)
 
-    if [ ! -f "$PACKAGES_DOTFILE" ]; then
-      for PACKAGE in $(pm-cli packages:list); do
-        {
-          # Let the user know which package is
-          # being installed
-          pm-cli output:header "Installing processmaker/$PACKAGE";
-
-          # Use composer to require the package
-          # we want to install
-          composer require "processmaker/$PACKAGE" -v --no-ansi --no-plugins --no-interaction;
-
-          # Run the related artisan install command
-          # the package provides
-          php artisan "$PACKAGE:install" -v --no-ansi --no-interaction;
-
-          # Publish any assets or files the package provides
-          php artisan vendor:publish -v --tag="$PACKAGE" --no-ansi --no-interaction;
-
-          # Add the installed package to our
-          # build dotfile for safekeeping
-          echo "$PACKAGE" >>"$PACKAGES_DOTFILE";
-        }
-      done
-
-      composer dumpautoload -o -v --no-ansi --no-interaction;
-      pm-cli output:header "Enterprise packages installed";
-
-    else
-      pm-cli output:header "Enterprise packages already installed";
+    if [ -f "$PACKAGES_DOTFILE" ]; then
+      pm-cli output:header "Enterprise packages already installed" && exit 0;
     fi
+
+    for PACKAGE in $(pm-cli packages:list); do
+      {
+        # Add the installed package to our
+        # build dotfile for safekeeping
+        echo "$PACKAGE" >>"$PACKAGES_DOTFILE";
+
+        # Let the user know which package is
+        # being installed
+        pm-cli output:header "Installing processmaker/$PACKAGE ($(cat $PACKAGES_DOTFILE | wc -l) of $PACKAGES_COUNT)";
+
+        # Use composer to require the package
+        # we want to install
+        composer require "processmaker/$PACKAGE" \
+          --no-progress \
+          --no-ansi \
+          --no-plugins \
+          --no-interaction;
+
+        # Run the related artisan install command
+        # the package provides
+        php artisan "$PACKAGE:install" -v --no-ansi --no-interaction;
+
+        # Publish any assets or files the package provides
+        php artisan vendor:publish -v --tag="$PACKAGE" --no-ansi --no-interaction;
+      }
+    done
+
+    #
+    # dump the autoloader and run the composer scripts
+    # once since we didn't during package installation
+    #
+    composer dumpautoload -o -v --no-ansi --no-interaction;
   }
 
   #
@@ -137,8 +144,8 @@
 
     composer install \
       --no-progress \
-      --optimize-autoloader \
       --no-plugins \
+      --no-scripts \
       --no-ansi \
       --no-interaction;
 
@@ -157,11 +164,10 @@
   }
 
   #
-  # smoke test to make sure everything is working
+  # turn telescope back on after install
   #
-  smokeTest() {
-    curl "http://$PM_DOMAIN" || exit 1
-    php artisan telescope:continue --no-ansi --no-interaction && exit 0;
+  enableTelescope() {
+    php artisan telescope:resume --no-ansi --no-interaction;
   }
 
   #
@@ -187,6 +193,7 @@
     # finish the base installation
     #
     php artisan key:generate --no-interaction --no-ansi;
+    php artisan telescope:pause && sleep 1;
     php artisan package:discover --no-interaction --no-ansi && sleep 1;
     php artisan horizon:publish --no-interaction --no-ansi && sleep 1;
     php artisan telescope:publish --force --no-interaction --no-ansi && sleep 1;
@@ -195,7 +202,6 @@
     php artisan passport:install --no-interaction --no-ansi && sleep 1;
     php artisan storage:link --no-interaction --no-ansi && sleep 1;
     php artisan telescope:publish --force --no-interaction --no-ansi && sleep 1;
-    php artisan telescope:pause && sleep 1;
   }
 
   #
@@ -302,8 +308,7 @@
   fi
 
   #
-  # run a quick smoke test by making a
-  # simple HTTP call to the frontend
+  # re-enable telescope and we're done!
   #
-  smokeTest;
+  enableTelescope;
 }
