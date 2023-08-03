@@ -26,6 +26,20 @@ services:
 #    ports:
 #      - 8126:8126
 
+  message-broker:
+    image: rabbitmq:3
+    hostname: ${PM_DOMAIN}
+    deploy:
+      mode: global
+      restart_policy:
+        condition: "on-failure"
+    networks:
+      - processmaker
+    ports:
+      - 30672:5672
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
   installer:
     image: processmaker:${PM_IMAGE_NAME}
     entrypoint: ["/usr/bin/installer-entrypoint"]
@@ -216,6 +230,7 @@ services:
       - mysql
       - redis
       - installer
+      - message-broker
 
   nginx:
     image: nginx:stable
@@ -365,6 +380,7 @@ services:
       - redis
       - nginx
       - installer
+      - message-broker
 
   echo:
     image: processmaker:${PM_IMAGE_NAME}
@@ -544,6 +560,7 @@ services:
       - mysql
       - redis
       - installer
+      - message-broker
 
   mysql:
     image: mysql:8
@@ -607,6 +624,7 @@ services:
 volumes:
   app-storage: {}
   mysql-data: {}
+  rabbitmq-data: {}
   redis-data: {}
   compiled-views: {}
   compiled-classes: {}

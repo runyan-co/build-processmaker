@@ -125,7 +125,33 @@
       echo "DATA_DB_PASSWORD=${DB_PASSWORD}";
       echo "DATA_DB_PORT=${DB_PORT}";
       echo "DATA_DB_NAME=${DB_NAME}";
-    } >>"$ENV_REALPATH";
+    } >>"${ENV_REALPATH}";
+
+    #
+    # add the message broker env variables
+    # if we find them defined already
+    #
+    if [ -n "${MESSAGE_BROKER_DRIVER}" ]; then
+      {
+        echo "MESSAGE_BROKER_DRIVER=${MESSAGE_BROKER_DRIVER}";
+
+        if [ -n "${RABBITMQ_PORT}" ]; then
+          echo "RABBITMQ_PORT=${RABBITMQ_PORT}";
+        fi
+
+        if [ -n "${RABBITMQ_HOST}" ]; then
+          echo "RABBITMQ_HOST=${RABBITMQ_HOST}";
+        fi
+
+        if [ -n "${RABBITMQ_LOGIN}" ]; then
+          echo "RABBITMQ_LOGIN=${RABBITMQ_LOGIN}";
+        fi
+
+        if [ -n "${RABBITMQ_PASSWORD}" ]; then
+          echo "RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}";
+        fi
+      } >>"${ENV_REALPATH}";
+    fi
 
     if [ -f .env ]; then
       echo "Removing default .env file";
@@ -134,7 +160,8 @@
 
     echo "Copying env file to app directory";
     cp "$ENV_REALPATH" .;
-  }
+
+}  }
 
   #
   # Install app's composer dependencies
