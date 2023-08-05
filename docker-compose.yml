@@ -40,6 +40,44 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 
+  ai:
+    image: processmaker-ai:${PM_IMAGE_NAME}
+    hostname: ${PM_DOMAIN}
+    stop_grace_period: 10s
+    deploy:
+      mode: global
+      restart_policy:
+        condition: "on-failure"
+        delay: 3s
+        max_attempts: 3
+    build:
+      context: ./services/ai
+    links:
+      - mysql
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - 8010:8010
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+      - 2606:4700:4700::1111
+      - 2606:4700:4700::1001
+      - 0.0.0.0
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+      - '${PM_DOMAIN}:host-gateway'
+    networks:
+      - processmaker
+    env_file:
+      - .env
+    environment:
+      - DATABASE_HOST=${DB_HOST}
+      - DATABASE_USER=${DB_USERNAME}
+      - DATABASE_PASS=${DB_PASSWORD}
+      - DATABASE_NAME=${DB_DATABASE}
+
   installer:
     image: processmaker:${PM_IMAGE_NAME}
     entrypoint: ["/usr/bin/installer-entrypoint"]
