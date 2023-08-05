@@ -9,3 +9,5 @@
   php datadog-setup.php --php-bin=all --enable-profiling &&
   rm datadog-setup.php
 }
+
+exit 0;

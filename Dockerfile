@@ -42,8 +42,9 @@ ENV PM_BRANCH                      ${PM_BRANCH}
 ENV PM_DIR                         ${PM_DIR}
 ENV PM_SETUP_DIR                   ${PM_SETUP_DIR}
 ENV PM_CLI_DIR                     ${PM_CLI_DIR}
-ENV PM_COMPOSER_PACKAGES_PATH      /opt/packages
-ENV PM_ENV                         .docker.env
+ENV PM_COMPOSER_PACKAGES_PATH      "/opt/packages"
+ENV PM_ENV                         ".docker.env"
+ENV ENV_REALPATH                   "${PM_DIR}/storage/build/.env"
 ENV PHP_BINARY                     "/usr/bin/php${PHP_VERSION}"
 ENV PHP_FPM_BINARY                 "/usr/sbin/php-fpm${PHP_VERSION}"
 
