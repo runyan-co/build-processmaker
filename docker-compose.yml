@@ -164,10 +164,13 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+        required: true
       database-host:
         condition: service_healthy
+        required: true
       message-broker:
         condition: service_started
+        required: true
 
   php-fpm:
     image: processmaker:${PM_IMAGE_NAME}
@@ -269,12 +272,18 @@ services:
       - database-host
       - redis
     depends_on:
+      installer:
+        condition: service_started
+        required: true
       database-host:
         condition: service_healthy
+        required: true
       redis:
         condition: service_healthy
+        required: true
       message-broker:
         condition: service_started
+        required: true
 
   load-balancer:
     image: nginx:stable
@@ -336,12 +345,18 @@ services:
       - database-host
       - redis
     depends_on:
+      installer:
+        condition: service_started
+        required: true
       database-host:
         condition: service_healthy
+        required: true
       redis:
         condition: service_healthy
+        required: true
       php-fpm:
         condition: service_started
+        required: true
 
   scheduler:
     image: processmaker:${PM_IMAGE_NAME}
@@ -359,9 +374,8 @@ services:
     deploy:
       mode: global
       restart_policy:
-        condition: on-failure
+        condition: always
         delay: 3s
-        max_attempts: 3
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
       net.ipv4.tcp_syncookies: 1
@@ -422,12 +436,18 @@ services:
       - database-host
       - redis
     depends_on:
+      installer:
+        condition: service_started
+        required: true
       database-host:
         condition: service_healthy
+        required: true
       redis:
         condition: service_healthy
+        required: true
       message-broker:
         condition: service_started
+        required: true
 
   consumer:
     image: processmaker:${PM_IMAGE_NAME}
@@ -507,12 +527,18 @@ services:
       - database-host
       - redis
     depends_on:
+      installer:
+        condition: service_started
+        required: true
       database-host:
         condition: service_healthy
+        required: true
       redis:
         condition: service_healthy
+        required: true
       message-broker:
         condition: service_started
+        required: true
 
   realtime-events:
     image: processmaker:${PM_IMAGE_NAME}
@@ -590,10 +616,15 @@ services:
       - database-host
       - redis
     depends_on:
+      installer:
+        condition: service_started
+        required: true
       database-host:
         condition: service_healthy
+        required: true
       redis:
         condition: service_healthy
+        required: true
 
   job-queue:
     image: processmaker:${PM_IMAGE_NAME}
@@ -688,12 +719,18 @@ services:
       - database-host
       - redis
     depends_on:
+      installer:
+        condition: service_started
+        required: true
       redis:
         condition: service_healthy
+        required: true
       database-host:
         condition: service_healthy
+        required: true
       message-broker:
         condition: service_started
+        required: true
 
   database-host:
     image: mysql:8
