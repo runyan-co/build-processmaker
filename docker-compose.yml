@@ -153,7 +153,6 @@ services:
         source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
         target: /opt/packages
         consistency: consistent
-        read_only: true
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - build:${PM_DIR}/storage/build:consistent
@@ -267,7 +266,6 @@ services:
         source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
         target: /opt/packages
         consistency: consistent
-        read_only: true
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - build:${PM_DIR}/storage/build:consistent
@@ -435,7 +433,6 @@ services:
         source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
         target: /opt/packages
         consistency: consistent
-        read_only: true
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - build:${PM_DIR}/storage/build:consistent
@@ -530,7 +527,6 @@ services:
 #          source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
 #          target: /opt/packages
 #          consistency: consistent
-#          read_only: true
 #      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
 #      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
 #      - build:${PM_DIR}/storage/build:consistent
@@ -726,7 +722,6 @@ services:
         source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
         target: /opt/packages
         consistency: consistent
-        read_only: true
       - ${PM_DOCKER_SOCK}:/var/run/docker.sock
       - ${PM_APP_SOURCE}:${PM_DIR}:consistent
       - build:${PM_DIR}/storage/build:consistent

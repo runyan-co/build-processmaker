@@ -26,6 +26,7 @@ ARG GITHUB_EMAIL
 ARG GITHUB_USERNAME
 ARG GITHUB_OAUTH_TOKEN
 ARG DOCKERVERSION=20.10.5
+ARG INSTALL_DD_TRACER=0
 
 #
 # environment vars
@@ -52,23 +53,28 @@ COPY cli/ ${PM_CLI_DIR}
 COPY stubs/.env.example ${PM_SETUP_DIR}
 COPY stubs/composer/config.json ${PM_SETUP_DIR}/config.json
 COPY --chmod=+x entrypoints/* /usr/bin
+COPY --chmod=+x helpers/* /usr/bin
 
-#
-# debian package updates and installs
-#
 RUN apt-get update -y && \
-    apt-get install -y --force-yes software-properties-common curl && \
-    curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash && \
-    apt-add-repository ppa:ondrej/php -y && \
-    apt-get update -y
-
-RUN apt-get install -y --force-yes \
+    apt-get install -y --force-yes \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-            time vim htop git zip unzip wget mysql-client pkg-config gcc g++ \
-            libmcrypt4 libpcre3-dev make python3 python3-pip whois acl jq \
-            libpng-dev nodejs net-tools build-essential ca-certificates \
-            libmagickwand-dev librdkafka-dev libpcre2-dev
+            software-properties-common curl && \
+    curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash && \
+    apt-add-repository ppa:ondrej/php -y && \
+    cleanup_apt
+
+RUN apt-get update -y && \
+    apt-get install -y --force-yes \
+        -o Dpkg::Options::="--force-confdef" \
+        -o Dpkg::Options::="--force-confold" \
+            wget curl time vim htop zip unzip mysql-client \
+            git pkg-config gcc g++ make python3 python3-pip \
+            whois acl jq net-tools build-essential nodejs \
+            ca-certificates libmcrypt4 libpcre3-dev \
+            libpng-dev libmagickwand-dev \
+            librdkafka-dev libpcre2-dev && \
+    cleanup_apt
 
 RUN apt-get update -y && \
     apt-get install -y --force-yes \
@@ -97,13 +103,9 @@ RUN apt-get update -y && \
           php${PHP_VERSION}-readline \
           php${PHP_VERSION}-msgpack \
           php${PHP_VERSION}-igbinary \
-          php${PHP_VERSION}-gmp
-
-RUN apt-get upgrade -y && \
-    apt-get autoremove -y && \
-    apt-get purge -y && \
-    apt-get clean && \
-    rm -rf /var/cache/* /var/lib/apt/lists/* /tmp/* /var/tmp/*
+          php${PHP_VERSION}-gmp && \
+    apt-get upgrade -y && \
+    cleanup_apt
 
 RUN git config --global user.name ${GITHUB_USERNAME} && \
     git config --global user.email ${GITHUB_EMAIL}
@@ -159,10 +161,9 @@ COPY stubs/php/${PHP_VERSION}/fpm/conf.d /etc/php/${PHP_VERSION}/fpm/conf.d
 COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
 
 #
-# copy a script which installs the datadog
-# APM tracer/profiler for PHP and Node
+# Install the DataDog PHP tracing extension if indicated
+# https://docs.datadoghq.com/tracing/trace_collection/dd_libraries/php/?tab=containers#install-the-extension
 #
-#COPY scripts/install-dd-tracer.sh .
-#RUN bash install-dd-tracer.sh
+RUN if [ "$INSTALL_DD_TRACER" = 1 ] || [ "$INSTALL_DD_TRACER" = true ]; then install_dd_tracer; fi
 
 WORKDIR ${PM_DIR}
