@@ -57,66 +57,83 @@ COPY --chmod=+x entrypoints/* /usr/bin
 # debian package updates and installs
 #
 RUN apt-get update -y && \
-    apt-get upgrade -y && \
     apt-get install -y --force-yes software-properties-common curl && \
     curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash && \
-    apt-get update -y && \
     apt-add-repository ppa:ondrej/php -y && \
-    apt-get update -y && \
+    apt-get update -y
+
+RUN apt-get install -y --force-yes \
+        -o Dpkg::Options::="--force-confdef" \
+        -o Dpkg::Options::="--force-confold" \
+            time vim htop git zip unzip wget mysql-client pkg-config gcc g++ \
+            libmcrypt4 libpcre3-dev make python3 python3-pip whois acl jq \
+            libpng-dev nodejs net-tools build-essential ca-certificates \
+            libmagickwand-dev librdkafka-dev libpcre2-dev
+
+RUN apt-get update -y && \
     apt-get install -y --force-yes \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-            time vim htop git zip unzip wget mysql-client pkg-config \
-            gcc g++ libmcrypt4 libpcre3-dev make python3 python3-pip \
-            whois acl libpng-dev libmagickwand-dev librdkafka-dev libpcre2-dev \
-            jq net-tools build-essential ca-certificates nodejs \
-            php${PHP_VERSION} \
-            php${PHP_VERSION}-fpm \
-            php${PHP_VERSION}-cli \
-            php${PHP_VERSION}-common \
-            php${PHP_VERSION}-mysql \
-            php${PHP_VERSION}-zip \
-            php${PHP_VERSION}-gd \
-            php${PHP_VERSION}-mbstring \
-            php${PHP_VERSION}-curl \
-            php${PHP_VERSION}-xml \
-            php${PHP_VERSION}-bcmath \
-            php${PHP_VERSION}-imagick \
-            php${PHP_VERSION}-dom \
-            php${PHP_VERSION}-sqlite3 \
-            php${PHP_VERSION}-imap \
-            php${PHP_VERSION}-redis \
-            php${PHP_VERSION}-dev \
-            php${PHP_VERSION}-mysql \
-            php${PHP_VERSION}-soap \
-            php${PHP_VERSION}-intl \
-            php${PHP_VERSION}-readline \
-            php${PHP_VERSION}-msgpack \
-            php${PHP_VERSION}-igbinary \
-            php${PHP_VERSION}-gmp && \
-    pecl install rdkafka && \
-    git config --global user.name ${GITHUB_USERNAME} && \
-    git config --global user.email ${GITHUB_EMAIL} && \
+          php${PHP_VERSION} \
+          php${PHP_VERSION}-fpm \
+          php${PHP_VERSION}-cli \
+          php${PHP_VERSION}-common \
+          php${PHP_VERSION}-mysql \
+          php${PHP_VERSION}-zip \
+          php${PHP_VERSION}-gd \
+          php${PHP_VERSION}-mbstring \
+          php${PHP_VERSION}-curl \
+          php${PHP_VERSION}-xml \
+          php${PHP_VERSION}-bcmath \
+          php${PHP_VERSION}-imagick \
+          php${PHP_VERSION}-dom \
+          php${PHP_VERSION}-sqlite3 \
+          php${PHP_VERSION}-imap \
+          php${PHP_VERSION}-redis \
+          php${PHP_VERSION}-dev \
+          php${PHP_VERSION}-mysql \
+          php${PHP_VERSION}-soap \
+          php${PHP_VERSION}-intl \
+          php${PHP_VERSION}-readline \
+          php${PHP_VERSION}-msgpack \
+          php${PHP_VERSION}-igbinary \
+          php${PHP_VERSION}-gmp
+
+RUN apt-get upgrade -y && \
+    apt-get autoremove -y && \
+    apt-get purge -y && \
+    apt-get clean && \
+    rm -rf /var/cache/* /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN git config --global user.name ${GITHUB_USERNAME} && \
+    git config --global user.email ${GITHUB_EMAIL}
+
+RUN pecl install rdkafka && \
     setcap "cap_net_bind_service=+ep" /usr/bin/php${PHP_VERSION} && \
     sed -i 's/www-data/root/g' /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf && \
     mkdir -p /run/php && \
-    update-alternatives --set php /usr/bin/php${PHP_VERSION} && \
-    curl -sS https://getcomposer.org/installer | php && \
+    update-alternatives --set php /usr/bin/php${PHP_VERSION}
+
+RUN curl -sS https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer && \
     composer config --global github-oauth.github.com ${GITHUB_OAUTH_TOKEN} && \
-    curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz && \
-    tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker && \
-    rm -f docker-${DOCKERVERSION}.tgz && \
-    ln -s /usr/local/bin/docker /usr/bin/docker && \
     composer config --global --list | grep "\[home\]" | awk '{print $2}' > .composer && \
     mv ${PM_SETUP_DIR}/config.json $(cat .composer) && \
     composer --working-dir=${PM_CLI_DIR} install --optimize-autoloader --no-ansi --no-interaction -v && \
-    composer --working-dir=${PM_CLI_DIR} clear-cache --no-ansi --no-interaction -v && \
-    echo "PM_DIRECTORY=${PM_DIR}" > ${PM_CLI_DIR}/.env && \
+    composer --working-dir=${PM_CLI_DIR} clear-cache --no-ansi --no-interaction -v
+
+RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz && \
+    tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker && \
+    rm -f docker-${DOCKERVERSION}.tgz && \
+    ln -s /usr/local/bin/docker /usr/bin/docker
+
+RUN echo "PM_DIRECTORY=${PM_DIR}" > ${PM_CLI_DIR}/.env && \
     ${PM_CLI_DIR}/pm-cli app:build pm-cli && \
     mv ${PM_CLI_DIR}/builds/pm-cli /usr/local/bin && \
     chmod +x /usr/local/bin/pm-cli && \
-    rm -rf ${PM_SETUP_DIR}/cli && \
+    rm -rf ${PM_SETUP_DIR}/cli
+
+RUN echo "session required pam_limits.so" >>/etc/pam.d/common-session && \
     rm -f "/${PM_ENV}" && \
     touch "/${PM_ENV}" && \
     chmod -x "/${PM_ENV}" && \
@@ -132,13 +149,7 @@ RUN apt-get update -y && \
         echo NODE_PATH=$(which node); \
         echo NPX_PATH=$(which npx); \
         echo NPM_PATH=$(which npm); \
-      } >"/${PM_ENV}" && \
-    echo "session required pam_limits.so" >>/etc/pam.d/common-session && \
-    sysctl --system && \
-    apt-get autoremove -y && \
-    apt-get purge -y && \
-    apt-get clean && \
-    rm -rf /var/cache/* /var/lib/apt/lists/* /tmp/* /var/tmp/*
+      } >"/${PM_ENV}"
 
 #
 # copy php config files
@@ -151,9 +162,7 @@ COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSIO
 # copy a script which installs the datadog
 # APM tracer/profiler for PHP and Node
 #
-COPY scripts/install-dd-tracer.sh .
+#COPY scripts/install-dd-tracer.sh .
 #RUN bash install-dd-tracer.sh
 
 WORKDIR ${PM_DIR}
-
-ENTRYPOINT ["/bin/bash"]
