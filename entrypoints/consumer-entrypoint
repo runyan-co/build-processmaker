@@ -36,5 +36,5 @@
   #
   # 3. Run the entrypoint command
   #
-  bash -c "$PHP_BINARY artisan schedule:work --no-interaction --no-ansi"
+  bash -c "$PHP_BINARY artisan processmaker:consume --no-interaction --no-ansi"
 }

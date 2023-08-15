@@ -2,33 +2,45 @@
 
 {
   #
-  # Make sure application is installed and ready
+  # ProcessMaker services installation status
   #
-  awaitInstallation() {
-    #
-    # Check for the requires packages files
-    # to run the echo server
-    #
-    if [ ! -d ./node_modules ]; then
-      echo "node_modules/ folder not ready (run npm i to install it)..."
-      return 1
-    elif [ ! -f ./node_modules/.bin/laravel-echo-server ]; then
-      echo "Laravel echo server binary not ready..."
-      return 1
-    elif [ ! -f storage/build/.installed ]; then
-      echo "ProcessMaker installation not complete.."
-      return 1
+  installationInProgress() {
+    if [ -f "$PM_DIR/storage/build/.installing" ]; then
+      return 0;
     else
-      return 0
+      return 1;
     fi
   }
 
   #
-  # If the app is in maintenance mode, bail
+  # Application fully installed and ready to take requests
   #
-  checkForMaintenanceMode() {
-    if [ -f ./storage/framework/maintenance.php ]; then
-      echo "ProcessMaker in maintenance mode..."
+  applicationReady() {
+    if installationInProgress; then
+      return 1;
+    elif [ ! -f "$PM_DIR/.env" ]; then
+      return 1;
+    else
+      return 0;
+    fi
+  }
+
+  #
+  # Make sure application is installed and ready
+  #
+  serviceReady() {
+    #
+    # Check for the requires packages files
+    # to run the echo server
+    #
+    if [ ! -d "$PM_DIR/node_modules" ]; then
+      echo "node_modules/ folder not ready (run npm i to install it)..."
+      return 1
+    elif [ ! -f "$PM_DIR/node_modules/.bin/laravel-echo-server" ]; then
+      echo "Laravel echo server binary not ready..."
+      return 1
+    elif ! applicationReady; then
+      echo "ProcessMaker installation not complete.."
       return 1
     else
       return 0
@@ -45,12 +57,10 @@
   }
 
   #
-  # 1. Wait for the .env file (the installer service will place it
-  #    in the storage:/var/www/html-/storage/keys directory)
+  # Wait until all dependencies are installed and
+  # application is ready to take requests
   #
-  # 2. Check for maintenance mode and continue when not in
-  #    maintenance mode
-  until awaitInstallation && checkForMaintenanceMode; do
+  until serviceReady; do
     sleep 5
   done
 

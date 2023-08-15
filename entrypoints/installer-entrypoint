@@ -4,8 +4,8 @@
   #
   # Define this for use later
   #
-  if [ -n "$INSTALL_ENTERPRISE_PACKAGES" ]; then
-    export INSTALL_ENTERPRISE_PACKAGES=TRUE
+  if [ -z "$INSTALL_ENTERPRISE_PACKAGES" ]; then
+    export INSTALL_ENTERPRISE_PACKAGES=1
   fi
 
   #
@@ -21,15 +21,15 @@
   # restore app-specific storage dir
   #
   restoreAppStorage() {
-    git restore ./storage/app;
+    git restore "$PM_DIR/storage/app";
   }
 
   #
   # empty the ./vendor directory
   #
   emptyVendorDir() {
-    if [ -d ./vendor ]; then
-      rm -rf ./vendor;
+    if [ -d "$PM_DIR/vendor" ]; then
+      rm -rf "$PM_DIR/vendor";
     fi
   }
 
@@ -37,7 +37,7 @@
   # Installs ProcessMaker enterprise packages
   #
   installEnterprisePackages() {
-    PACKAGES_DOTFILE=storage/build/.packages
+    PACKAGES_DOTFILE="$PM_DIR/storage/build/.packages"
     PACKAGES_COUNT=$(pm-cli packages:list | wc -l)
 
     if [ -f "$PACKAGES_DOTFILE" ]; then
@@ -82,8 +82,6 @@
   # setup the .env file(s)
   #
   setupEnvironment() {
-    ENV_REALPATH=storage/build/.env
-
     #
     # Create and link the .env file
     #
@@ -153,14 +151,11 @@
       } >>"${ENV_REALPATH}";
     fi
 
-    if [ -f .env ]; then
-      echo "Removing default .env file";
-      rm -f .env;
-    fi
-
+    #
+    # Copy over the new .env file for laravel
+    #
     echo "Copying env file to app directory";
     cp "$ENV_REALPATH" .;
-
   }
 
   #
@@ -202,8 +197,17 @@
   #
   installApplication() {
     #
+    # Mark the services/application as
+    # currently being installed
+    #
+    if ! installationInProgress; then
+      touch "$PM_DIR/storage/build/.installing";
+    fi
+
+    #
     # Install npm dependencies and run build
     #
+    # TODO Currently disabled as I cannot get the npm dependencies to install in a running container on arm64
 #    if ! npmInstallAndBuild && sleep 5; then
 #      pm-cli output:error "Error while installing npm dependencies or building assets" && exit 1;
 #    fi
@@ -246,8 +250,8 @@
   # were mounted
   #
   restoreDirectories() {
-    restoreAppStorage
-    emptyVendorDir
+    restoreAppStorage;
+    emptyVendorDir;
   }
 
   #
@@ -286,7 +290,7 @@
     #
     # install the ProcessMaker-specific enterprise packages, if desired
     #
-    if [ "$INSTALL_ENTERPRISE_PACKAGES" = TRUE ]; then
+    if [ "$INSTALL_ENTERPRISE_PACKAGES" ]; then
       if ! installEnterprisePackages; then
         pm-cli output:error "Could not install enterprise packages" && exit 1;
       else
@@ -295,19 +299,32 @@
     fi
 
     #
-    # Mark as installed
+    # Mark as done installing
     #
-    touch storage/build/.installed;
+    rm "$PM_DIR/storage/build/.installing";
   }
 
   #
-  # ProcessMaker installation status
+  # ProcessMaker services installation status
   #
-  isInstalled() {
-    if [ -f storage/build/.installed ]; then
+  installationInProgress() {
+    if [ -f "$PM_DIR/storage/build/.installing" ]; then
       return 0;
     else
       return 1;
+    fi
+  }
+
+  #
+  # Application fully installed and ready to take requests
+  #
+  applicationReady() {
+    if ! installationInProgress; then
+      return 1;
+    elif [ ! -f "$PM_DIR/.env" ]; then
+      return 1;
+    else
+      return 0;
     fi
   }
 
@@ -317,19 +334,19 @@
   sourceDockerEnv
 
   #
-  # Check to see if ProcessMaker needs to be
-  # installed and if so, run the commands to
-  # do so. Otherwise, exit
+  # Check to see if ProcessMaker is installed and ready
+  # to deploy. If so, exit and allow it to start up.
+  # Otherwise, continue to install services.
   #
-  if isInstalled; then
-    pm-cli output:header "ProcessMaker already installed" && exit 0;
+  if applicationReady; then
+    pm-cli output:header "ProcessMaker ready" && exit 0;
   else
     #
     # If we don't find a linked .env file and this is
     # a web service, then we need to run the
     # app's artisan install command
     #
-    if ! installProcessMaker | tee -a storage/build/install.log; then
+    if ! installProcessMaker | tee -a "$PM_DIR/storage/build/install.log"; then
       pm-cli output:error "Install failed. See storage/build/install.log for details." && exit 1;
     fi
   fi
