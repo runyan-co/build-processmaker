@@ -68,7 +68,7 @@ RUN apt-get update -y && \
     apt-get install -y --force-yes \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-            wget curl time vim htop zip unzip mysql-client \
+            wget time vim htop zip unzip mysql-client \
             git pkg-config gcc g++ make python3 python3-pip \
             whois acl jq net-tools build-essential nodejs \
             ca-certificates libmcrypt4 libpcre3-dev \
@@ -120,16 +120,16 @@ RUN curl -sS https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer && \
     composer config --global github-oauth.github.com ${GITHUB_OAUTH_TOKEN} && \
     composer config --global --list | grep "\[home\]" | awk '{print $2}' > .composer && \
-    mv ${PM_SETUP_DIR}/config.json $(cat .composer) && \
-    composer --working-dir=${PM_CLI_DIR} install --optimize-autoloader --no-ansi --no-interaction -v && \
-    composer --working-dir=${PM_CLI_DIR} clear-cache --no-ansi --no-interaction -v
+    mv ${PM_SETUP_DIR}/config.json $(cat .composer)
 
 RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz && \
     tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker && \
     rm -f docker-${DOCKERVERSION}.tgz && \
     ln -s /usr/local/bin/docker /usr/bin/docker
 
-RUN echo "PM_DIRECTORY=${PM_DIR}" > ${PM_CLI_DIR}/.env && \
+RUN composer --working-dir=${PM_CLI_DIR} install --optimize-autoloader --no-ansi --no-interaction -v && \
+    composer --working-dir=${PM_CLI_DIR} clear-cache --no-ansi --no-interaction -v && \
+    echo "PM_DIRECTORY=${PM_DIR}" > ${PM_CLI_DIR}/.env && \
     ${PM_CLI_DIR}/pm-cli app:build pm-cli && \
     mv ${PM_CLI_DIR}/builds/pm-cli /usr/local/bin && \
     chmod +x /usr/local/bin/pm-cli && \

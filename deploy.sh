@@ -9,8 +9,8 @@
   # dep issue within the docker image
   if [ ! -d "$PM_APP_SOURCE/node_modules" ]; then
     echo "Install npm dependencies and building assets..."
-    cd "$PM_APP_SOURCE" && npm i --force
-    cd "$PM_APP_SOURCE" && npm run dev --no-audit
+    cd "$PM_APP_SOURCE" && npm i
+    cd "$PM_APP_SOURCE" && npm run dev
   fi
 
   # Return to the docker build source directory
