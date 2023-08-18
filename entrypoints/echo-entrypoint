@@ -68,9 +68,9 @@
   # 3. Remove any existing echo server lock file
   #
   removeLockFile;
-
-  #
-  # 4. Run the entrypoint command
-  #
-  bash -c "$NPX_PATH $PM_DIR/node_modules/.bin/laravel-echo-server start --force --dev";
 }
+
+#
+# 4. Run the entrypoint command
+#
+$NPX_PATH "$PM_DIR/node_modules/.bin/laravel-echo-server" start --force --dev

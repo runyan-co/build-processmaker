@@ -19,6 +19,6 @@
   echo "Building docker image and deploying services..."
   cd "$PM_BUILD_SOURCE" && docker compose up -d --build
 
-  # Exit when finished
-  echo "Done!" && exit 0
+  # Build is complete, show the logs for the installer
+  docker compose logs -f installer
 }

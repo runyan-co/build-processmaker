@@ -32,9 +32,9 @@
   until applicationReady; do
     sleep 5
   done
-
-  #
-  # 3. Run the entrypoint command
-  #
-  bash -c "$PHP_FPM_BINARY --fpm-config /etc/php/$PHP_VERSION/fpm/php-fpm.conf --nodaemonize --allow-to-run-as-root"
 }
+
+#
+# 3. Run the entrypoint command
+#
+$PHP_FPM_BINARY --fpm-config "/etc/php/$PHP_VERSION/fpm/php-fpm.conf" --nodaemonize --allow-to-run-as-root

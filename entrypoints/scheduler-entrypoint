@@ -32,9 +32,9 @@
   until applicationReady; do
     sleep 5
   done
-
-  #
-  # 3. Run the entrypoint command
-  #
-  bash -c "$PHP_BINARY artisan schedule:work --no-interaction --no-ansi"
 }
+
+#
+# 3. Run the entrypoint command
+#
+$PHP_BINARY artisan schedule:work --no-interaction --no-ansi

@@ -32,9 +32,9 @@
   until applicationReady; do
     sleep 5
   done
-
-  #
-  # 4. Run the entrypoint command
-  #
-  bash -c "$PHP_BINARY artisan horizon --no-interaction --no-ansi";
 }
+
+#
+# 4. Run the entrypoint command
+#
+$PHP_BINARY artisan horizon --no-interaction --no-ansi
