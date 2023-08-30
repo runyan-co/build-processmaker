@@ -9,14 +9,15 @@
   set -e
   source ./.env
 
-  for PACKAGE in "$PM_COMPOSER_PACKAGES_SOURCE_PATH/*"; do
+  for PACKAGE in $PM_COMPOSER_PACKAGES_SOURCE_PATH/*; do
     {
-      cd "$PM_COMPOSER_PACKAGES_SOURCE_PATH/$PACKAGE_DIR"
-      git restore .
-      git restore . --staged
-      git clean -f -x
-      echo "$PACKAGE_DIR cleaned up and updated to the latest."
-      exit 0
+      cd "$PACKAGE" && git restore . && \
+      cd "$PACKAGE" && git restore . --staged && \
+      cd "$PACKAGE" && git clean -f -x && \
+      cd "$PACKAGE" && git fetch --all && \
+      cd "$PACKAGE" && git pull;
     } &
   done
+
+  wait
 }

@@ -123,6 +123,9 @@
       echo "DATA_DB_PASSWORD=${DB_PASSWORD}";
       echo "DATA_DB_PORT=${DB_PORT}";
       echo "DATA_DB_NAME=${DB_NAME}";
+      echo "OPEN_AI_SECRET=${OPEN_AI_SECRET}";
+      echo "OPENAI_API_KEY=${OPENAI_API_KEY}";
+      echo "OPENAI_ORGANIZATION=${OPENAI_ORGANIZATION}";
     } >>"${ENV_REALPATH}";
 
     #
@@ -319,13 +322,13 @@
   # Application fully installed and ready to take requests
   #
   applicationReady() {
-    if ! installationInProgress; then
+    if installationInProgress; then
       return 1;
     elif [ ! -f "$PM_DIR/.env" ]; then
       return 1;
-    else
-      return 0;
     fi
+
+    return 0;
   }
 
   #

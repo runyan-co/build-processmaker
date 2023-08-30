@@ -380,6 +380,7 @@ services:
 
   realtime-events:
     image: processmaker:${PM_IMAGE_NAME}
+    hostname: ${PM_DOMAIN}
     entrypoint: [ "/usr/bin/echo-entrypoint" ]
     stop_signal: SIGTERM
     stop_grace_period: 5s
