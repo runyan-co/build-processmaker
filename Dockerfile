@@ -59,8 +59,11 @@ RUN apt-get update -y && \
     apt-get install -y --force-yes \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-            software-properties-common curl && \
-    curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash && \
+            software-properties-common curl ca-certificates gnupg && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_VERSION.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update -y && \
+    apt-get install nodejs -y && \
     apt-add-repository ppa:ondrej/php -y && \
     cleanup_apt
 
@@ -70,8 +73,8 @@ RUN apt-get update -y && \
         -o Dpkg::Options::="--force-confold" \
             wget time vim htop zip unzip mysql-client \
             git pkg-config gcc g++ make python3 python3-pip \
-            whois acl jq net-tools build-essential nodejs \
-            ca-certificates libmcrypt4 libpcre3-dev \
+            whois acl jq net-tools build-essential \
+            libmcrypt4 libpcre3-dev \
             libpng-dev libmagickwand-dev \
             librdkafka-dev libpcre2-dev && \
     cleanup_apt
@@ -167,3 +170,5 @@ COPY stubs/php/${PHP_VERSION}/fpm/pool.d/processmaker.conf /etc/php/${PHP_VERSIO
 RUN if [ "$INSTALL_DD_TRACER" = 1 ] || [ "$INSTALL_DD_TRACER" = true ]; then install_dd_tracer; fi
 
 WORKDIR ${PM_DIR}
+
+ENTRYPOINT ["/bin/bash"]

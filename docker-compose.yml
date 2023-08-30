@@ -35,7 +35,7 @@ services:
       - DATABASE_HOST=${DB_HOST}
       - DATABASE_USER=${DB_USERNAME}
       - DATABASE_PASS=${DB_PASSWORD}
-      - DATABASE_NAME=${DB_DATABASE}
+      - DATABASE_NAME=${DB_NAME}
 
   installer:
     image: processmaker:${PM_IMAGE_NAME}
@@ -93,7 +93,7 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - DB_DATABASE=${DB_DATABASE}
+      - DB_DATABASE=${DB_NAME}
       - DB_PORT=${DB_PORT}
     volumes:
       - type: volume
@@ -231,7 +231,6 @@ services:
 
   load-balancer:
     image: nginx:stable
-    hostname: ${PM_DOMAIN}
     healthcheck:
       test: "curl http://${PM_DOMAIN}/nginx_status || exit 1"
       interval: 1m
@@ -380,7 +379,6 @@ services:
 
   realtime-events:
     image: processmaker:${PM_IMAGE_NAME}
-    hostname: ${PM_DOMAIN}
     entrypoint: [ "/usr/bin/echo-entrypoint" ]
     stop_signal: SIGTERM
     stop_grace_period: 5s
@@ -390,20 +388,12 @@ services:
         condition: on-failure
         delay: 3s
         max_attempts: 3
-    ulimits:
-      nproc: 65536
-      nofile:
-        soft: 65536
-        hard: 65536
     sysctls:
       kernel.domainname: ${PM_DOMAIN}
       net.ipv4.tcp_syncookies: 1
       net.ipv4.conf.all.rp_filter: 1
       net.ipv4.conf.all.secure_redirects: 1
-      net.ipv4.conf.all.send_redirects: 0
-      net.ipv4.conf.all.accept_source_route: 0
-      net.ipv6.conf.all.accept_source_route: 0
-      net.ipv4.icmp_echo_ignore_broadcasts: 1
+      net.ipv4.conf.all.send_redirects: 1
       net.ipv4.tcp_timestamps: 0
       net.ipv4.tcp_rmem: '4096 4096 16777216'
       net.ipv4.tcp_wmem: '4096 4096 16777216'

@@ -123,10 +123,27 @@
       echo "DATA_DB_PASSWORD=${DB_PASSWORD}";
       echo "DATA_DB_PORT=${DB_PORT}";
       echo "DATA_DB_NAME=${DB_NAME}";
-      echo "OPEN_AI_SECRET=${OPEN_AI_SECRET}";
-      echo "OPENAI_API_KEY=${OPENAI_API_KEY}";
-      echo "OPENAI_ORGANIZATION=${OPENAI_ORGANIZATION}";
     } >>"${ENV_REALPATH}";
+
+    #
+    # check for and set AI-service related
+    # environment variables if found
+    #
+    for AI_ENV_VARIABLE in AI_MICROSERVICE_HOST \
+      ALLOW_HTTP_CALLBACK \
+      OPENAI_API_KEY \
+      OPENAI_ORGANIZATION \
+      OPENAI_API_URL \
+      OPENAI_DEFAULT_MODEL \
+      OPENAI_API_REQUEST_TIMEOUT \
+      ACCESS_CONTROL_ALLOW_ORIGIN \
+      ACCESS_CONTROL_ALLOW_METHODS \
+      ACCESS_CONTROL_ALLOW_HEADERS \
+      ACCESS_CONTROL_ALLOW_CREDENTIALS; do
+      if [ -n "${!AI_ENV_VARIABLE}" ]; then
+        echo "$AI_ENV_VARIABLE=${!AI_ENV_VARIABLE}" >>"${ENV_REALPATH}"
+      fi
+    done
 
     #
     # add the message broker env variables
@@ -178,17 +195,6 @@
   }
 
   #
-  # Install app's npm dependencies
-  #
-  npmInstallAndBuild() {
-    pm-cli output:header "Installing npm dependencies";
-    npm ci --no-audit --force;
-    pm-cli output:header "Compiling npm assets";
-    npm run dev --no-progress;
-    npm cache clear --force;
-  }
-
-  #
   # turn telescope back on after install
   #
   enableTelescope() {
@@ -206,14 +212,6 @@
     if ! installationInProgress; then
       touch "$PM_DIR/storage/build/.installing";
     fi
-
-    #
-    # Install npm dependencies and run build
-    #
-    # TODO Currently disabled as I cannot get the npm dependencies to install in a running container on arm64
-#    if ! npmInstallAndBuild && sleep 5; then
-#      pm-cli output:error "Error while installing npm dependencies or building assets" && exit 1;
-#    fi
 
     #
     # Install composer dependencies
