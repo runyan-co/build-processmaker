@@ -58,7 +58,7 @@ instances:
     ## set nginx_status_url to the location of the `/api` endpoint.
     ## E.g. `nginx_status_url: http://localhost:8080/api`
     #
-  - nginx_status_url: http://load-balancer/nginx_status
+  - nginx_status_url: http://http-ingress/nginx_status
 
     ## @param use_plus_api - boolean - optional - default: false
     ## If you are using the commercial version of nginx, for releases R13 and above,

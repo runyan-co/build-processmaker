@@ -20,13 +20,14 @@ ARG PM_DIR=/var/www/html
 ARG PM_SETUP_DIR=/opt/setup
 ARG PM_CLI_DIR=/opt/setup/cli
 ARG PM_APP_PORT=8080
-ARG PM_BROADCASTER_PORT=6004
+ARG PM_BROADCASTER_PORT=6009
 ARG PM_DOCKER_SOCK=/var/run/docker.sock
 ARG GITHUB_EMAIL
 ARG GITHUB_USERNAME
 ARG GITHUB_OAUTH_TOKEN
 ARG DOCKERVERSION=20.10.5
 ARG INSTALL_DD_TRACER=0
+ARG INSTALL_NODE=1
 
 #
 # environment vars
@@ -59,13 +60,11 @@ RUN apt-get update -y && \
     apt-get install -y --force-yes \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
-            software-properties-common curl ca-certificates gnupg && \
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_VERSION.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
-    apt-get update -y && \
-    apt-get install nodejs -y && \
+            software-properties-common curl ca-certificates && \
     apt-add-repository ppa:ondrej/php -y && \
     cleanup_apt
+
+RUN if [ "$INSTALL_NODE" = 1 ]; then install_node && cleanup_apt; fi
 
 RUN apt-get update -y && \
     apt-get install -y --force-yes \

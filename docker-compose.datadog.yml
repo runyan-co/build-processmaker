@@ -271,7 +271,7 @@ services:
         condition: service_healthy
         required: true
 
-  load-balancer:
+  http-ingress:
     image: nginx:stable
     hostname: ${PM_DOMAIN}
     healthcheck:
@@ -435,7 +435,7 @@ services:
         condition: service_healthy
         required: true
 
-  realtime-events:
+  soketi:
     image: processmaker:${PM_IMAGE_NAME}
     entrypoint: [ "/usr/bin/echo-entrypoint" ]
     stop_signal: SIGTERM
@@ -495,7 +495,7 @@ services:
     environment:
       - DD_ENV=${DD_ENV}
       - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=realtime-events
+      - DD_SERVICE=soketi
       - DD_AGENT_HOST=dd-agent
       - DD_TRACE_CLI_ENABLED=1
       - DD_INSTRUMENTATION_TELEMETRY_ENABLED=0
@@ -521,7 +521,7 @@ services:
         condition: service_healthy
         required: true
 
-  job-queue:
+  queue:
     image: processmaker:${PM_IMAGE_NAME}
     entrypoint: [ "/usr/bin/queue-entrypoint" ]
     stop_signal: SIGTERM
@@ -584,7 +584,7 @@ services:
     environment:
       - DD_ENV=${DD_ENV}
       - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=job-queue
+      - DD_SERVICE=queue
       - DD_AGENT_HOST=dd-agent
       - DD_TRACE_CLI_ENABLED=1
       - DD_TRACE_AUTO_FLUSH_ENABLED=1
@@ -592,7 +592,7 @@ services:
       - DD_LOGS_INJECTION=1
       - DD_PROFILING_EXPERIMENTAL_TIMELINE_ENABLED=1
       - DD_INSTRUMENTATION_TELEMETRY_ENABLED=0
-      - DD_SERVICE_MAPPING=laravelqueue:job-queue
+      - DD_SERVICE_MAPPING=laravelqueue:queue
     networks:
       - processmaker
     volumes:

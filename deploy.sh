@@ -14,7 +14,7 @@
       echo ""
       cd "$PM_APP_SOURCE"
       npm install --unsafe-perm=true && \
-      NODE_OPTIONS=--max-old-space-size=8000 npm run prod
+      NODE_OPTIONS=--max-old-space-size=8000 npm run dev --no-audit
     } & wait
   fi
 

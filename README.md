@@ -11,7 +11,7 @@ PM_DOMAIN=localhost
 # Host port mapped to web container for port 80 traffic
 PM_APP_PORT=8080
 # Host port mapped to web container for port 6001 traffic
-PM_BROADCASTER_PORT=6004
+PM_BROADCASTER_PORT=6009
 # Valid branch name to build and install the containers with.
 # Note: version of the branch must be >= 4.3.*
 PM_BRANCH=

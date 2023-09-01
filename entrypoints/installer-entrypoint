@@ -131,6 +131,7 @@
       echo "DATA_DB_PASSWORD=${DB_PASSWORD}";
       echo "DATA_DB_PORT=${DB_PORT}";
       echo "DATA_DB_NAME=${DB_NAME}";
+      echo "PUSHER_PORT=${PM_BROADCASTER_PORT}";
     } >>"${ENV_REALPATH}";
 
     #

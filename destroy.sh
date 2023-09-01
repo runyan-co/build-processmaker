@@ -6,12 +6,13 @@
 
   # Bring down the docker services and destroy the volumes
   echo "Bringing down docker compose services..."
-  docker compose down --remove-orphans --volumes & wait && sleep 3
+  docker compose down --remove-orphans --volumes --remove-orphans
 
   # Remove the installed dependencies
   echo "Removing node_modules/ and vendor/ directories..."
   rm -rf "$PM_APP_SOURCE/node_modules"
   rm -rf "$PM_APP_SOURCE/vendor"
+  rm "$PM_APP_SOURCE/.env"
 
   # Restore the public directory and composer files
   echo "Restoring processmaker/processmaker back to git commit HEAD..."
