@@ -125,7 +125,7 @@ services:
     stop_signal: SIGTERM
     stop_grace_period: 5s
     healthcheck:
-      test: "curl processmaker.test/ping || exit 1"
+      test: "curl localhost/ping || exit 1"
       interval: 1m
       timeout: 3s
     ulimits:

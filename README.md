@@ -1,41 +1,66 @@
 # ProcessMaker v4 with Docker Compose
-Build a docker image `processmaker:version` using a specific branch of [processmaker/processmaker](https://github.com/ProcessMaker/processmaker). 
-### Getting started:
-Copy the example `.env.build` to `.env` and fill out the variables:
-```dotenv
-# Absolute path to local docker socket
-PM_DOCKER_SOCK=/var/run/docker.sock
-# Domain name to be used for the containers
-# (you shouldn't need to change this)
-PM_DOMAIN=localhost
-# Host port mapped to web container for port 80 traffic
-PM_APP_PORT=8080
-# Host port mapped to web container for port 6001 traffic
-PM_BROADCASTER_PORT=6009
-# Valid branch name to build and install the containers with.
-# Note: version of the branch must be >= 4.3.*
-PM_BRANCH=
-# The tag to use for the built image
-PM_IMAGE_NAME=
-# Instructs the installer service whether or not to 
-# install the enterprise packages
-INSTALL_ENTERPRISE_PACKAGES=true
-# Absolute path to the ProcessMaker directory in the 
-# containers. You very likely will NOT need to change this
-PM_DIR=/var/www/html
-# The absolute path to directory containing all local
-# versions of enterprise ProcessMaker composer 
-# packages on the HOST machine
-PM_COMPOSER_PACKAGES_SOURCE_PATH=
-# The absolute path to the directory containing 
-# the core ProcessMaker code on the HOST machine
-PM_APP_SOURCE=
-# Fill out the GitHib variables with a valid GitHub 
-# personal OAuth token, your username, and email
-GITHUB_OAUTH_TOKEN=
-GITHUB_USERNAME=
-GITHUB_EMAIL=
-```
-Then run `docker compose up -d --build`. When it's finished building, watch the output of the `processmaker-installer` service container.
 
-Once complete, the app will be available at `http://localhost:8080`
+## Requirements
+- macOS >= 12.0.*
+- Node 16.18.1
+- npm 8.19.2
+- Docker Desktop
+
+#### 1. Install basic dependencies and node/npm
+Run the following in your console if you don't have the necessary dependencies:
+```shell
+# make sure xcode is installed
+xcode-select --install
+
+# create the default zsh profile dotfile if it doesn't exist
+[ ! -f ~/.zshrc ] && touch ~/.zshrc
+
+# install homebrew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install --formula jq
+
+# install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+
+# install the needed version of node
+source ~/.zshrc
+nvm install 16.18.1
+nvm alias default 16.18.1
+
+# smoke test to make sure we have the right versions installed
+node -v
+npm -v
+```
+
+#### 2. Create a local directory processmaker/processmaker
+```shell
+mkdir -p ~/repositories
+cd ~/repositories
+git clone https://github.com/ProcessMaker/processmaker
+cd processmaker
+# running this will give you the value to set 
+# as "PM_APP_SOURCE" in the .env file:
+pwd
+```
+
+#### 3. Create a local directory for the enterprise composer packages
+```shell
+mkdir -p ~/packages/composer/processmaker
+cd ~/packages/composer/processmaker
+# running this will give you the value to set as 
+# "PM_COMPOSER_PACKAGES_SOURCE_PATH" in the .env file:
+pwd
+```
+
+#### 4. Install Docker Desktop
+- Download [Docker Desktop](https://www.docker.com/products/docker-desktop/) from their website and follow the installation instructions.
+- Under `Settings > Resources > File Sharing` make sure your user directory is shared (it should look like /Users/{YOUR_USERNAME_HERE})
+
+#### 5. Copy the sample build env file to use locally
+```shell
+cp .env.build .env
+```
+##### After running this, go through each variable in the `.env` file and set them appropriately.
+
+#### 6. Helper scripts
+[ TO DO ]

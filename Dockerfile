@@ -54,7 +54,7 @@ COPY cli/ ${PM_CLI_DIR}
 COPY stubs/.env.example ${PM_SETUP_DIR}
 COPY stubs/composer/config.json ${PM_SETUP_DIR}/config.json
 COPY --chmod=+x entrypoints/* /usr/bin
-COPY --chmod=+x helpers/* /usr/bin
+COPY --chmod=+x stubs/helpers/* /usr/bin
 
 RUN apt-get update -y && \
     apt-get install -y --force-yes \
