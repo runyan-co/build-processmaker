@@ -9,6 +9,14 @@
   fi
 
   #
+  # cache framework app files
+  #
+  cacheFrameworkFiles() {
+    php artisan config:cache --no-interaction --no-ansi
+    APP_RUNNING_IN_CONSOLE=false php artisan route:cache --no-interaction --no-ansi
+  }
+
+  #
   # Source a few necessary env variables
   #
   sourceDockerEnv() {
@@ -140,36 +148,24 @@
       ACCESS_CONTROL_ALLOW_METHODS \
       ACCESS_CONTROL_ALLOW_HEADERS \
       ACCESS_CONTROL_ALLOW_CREDENTIALS; do
-      if [ -n "${!AI_ENV_VARIABLE}" ]; then
-        echo "$AI_ENV_VARIABLE=${!AI_ENV_VARIABLE}" >>"${ENV_REALPATH}"
-      fi
+        if [ -n "${!AI_ENV_VARIABLE}" ]; then
+          echo "$AI_ENV_VARIABLE=${!AI_ENV_VARIABLE}" >>"${ENV_REALPATH}"
+        fi
     done
 
     #
     # add the message broker env variables
     # if we find them defined already
     #
-    if [ -n "${MESSAGE_BROKER_DRIVER}" ]; then
-      {
-        echo "MESSAGE_BROKER_DRIVER=${MESSAGE_BROKER_DRIVER}";
-
-        if [ -n "${RABBITMQ_PORT}" ]; then
-          echo "RABBITMQ_PORT=${RABBITMQ_PORT}";
+    for NAYRA_ENV_VARIABLE in MESSAGE_BROKER_DRIVER \
+      RABBITMQ_PORT \
+      RABBITMQ_HOST \
+      RABBITMQ_LOGIN \
+      RABBITMQ_PASSWORD; do
+        if [ -n "${!NAYRA_ENV_VARIABLE}" ]; then
+          echo "$NAYRA_ENV_VARIABLE=${!NAYRA_ENV_VARIABLE}" >>"${ENV_REALPATH}"
         fi
-
-        if [ -n "${RABBITMQ_HOST}" ]; then
-          echo "RABBITMQ_HOST=${RABBITMQ_HOST}";
-        fi
-
-        if [ -n "${RABBITMQ_LOGIN}" ]; then
-          echo "RABBITMQ_LOGIN=${RABBITMQ_LOGIN}";
-        fi
-
-        if [ -n "${RABBITMQ_PASSWORD}" ]; then
-          echo "RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}";
-        fi
-      } >>"${ENV_REALPATH}";
-    fi
+    done
 
     #
     # Copy over the new .env file for laravel
@@ -224,7 +220,7 @@
     # Run the remaining artisan commands to
     # finish the base installation
     #
-    php artisan key:generate --no-interaction --no-ansi;
+    php artisan key:generate --no-interaction --no-ansi && sleep 1;
     php artisan telescope:pause && sleep 1;
     php artisan package:discover --no-interaction --no-ansi && sleep 1;
     php artisan horizon:publish --no-interaction --no-ansi && sleep 1;
@@ -356,4 +352,9 @@
   # re-enable telescope and we're done!
   #
   enableTelescope;
+
+  #
+  # cache the app configuration and routes
+  #
+  cacheFrameworkFiles;
 }

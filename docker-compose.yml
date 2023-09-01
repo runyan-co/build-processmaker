@@ -378,16 +378,31 @@ services:
         required: true
 
   realtime-events:
-    image: 'quay.io/soketi/soketi:latest-16-alpine'
-    ports:
-      - '${SOKETI_PORT:-6001}:6001'
-      - '${SOKETI_METRICS_SERVER_PORT:-9601}:9601'
+    image: processmaker:${PM_IMAGE_NAME}
+    entrypoint: [ "/usr/bin/echo-entrypoint" ]
+    stop_signal: SIGTERM
+    stop_grace_period: 5s
     deploy:
       mode: global
       restart_policy:
         condition: on-failure
         delay: 3s
         max_attempts: 3
+    sysctls:
+      kernel.domainname: ${PM_DOMAIN}
+      net.ipv4.tcp_syncookies: 1
+      net.ipv4.conf.all.rp_filter: 1
+      net.ipv4.conf.all.secure_redirects: 1
+      net.ipv4.conf.all.send_redirects: 1
+      net.ipv4.tcp_timestamps: 0
+      net.ipv4.tcp_rmem: '4096 4096 16777216'
+      net.ipv4.tcp_wmem: '4096 4096 16777216'
+      net.ipv4.tcp_tw_reuse: 1
+      net.ipv4.tcp_fin_timeout: 30
+      net.core.somaxconn: 60000
+      net.ipv4.tcp_synack_retries: 3
+    ports:
+      - ${PM_BROADCASTER_PORT}:${PM_BROADCASTER_PORT}
     extra_hosts:
       - 'host.docker.internal:host-gateway'
       - '${PM_DOMAIN}:host-gateway'
@@ -397,13 +412,27 @@ services:
       - 2606:4700:4700::1111
       - 2606:4700:4700::1001
       - 0.0.0.0
+    build:
+      context: .
+      args:
+        PM_DOCKER_SOCK:
+        PM_BRANCH:
+        PM_APP_PORT:
+        PM_BROADCASTER_PORT:
+        PM_DOMAIN:
+        PM_DIR:
+        GITHUB_EMAIL:
+        GITHUB_USERNAME:
+        GITHUB_OAUTH_TOKEN:
     env_file:
       - .env
-    environment:
-      SOKETI_DEBUG: '1'
-      SOKETI_METRICS_SERVER_PORT: '9601'
     networks:
       - processmaker
+    volumes:
+      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
+      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
+      - ${PM_BUILD_SOURCE}/stubs/echo/laravel-echo-server.json:${PM_DIR}/laravel-echo-server.json:ro
+      - build:${PM_DIR}/storage/build:consistent
     links:
       - database-host
       - redis
