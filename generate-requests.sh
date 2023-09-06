@@ -4,13 +4,12 @@
   set -e
   source ./.env
 
-  # TODO
   sendHttpRequest() {
     true
   }
 
   while true; do
-    for i in {0..128}; do
+    for i in {0..32}; do
       { echo "$i" && sendHttpRequest >/dev/null; } &
     done
     wait

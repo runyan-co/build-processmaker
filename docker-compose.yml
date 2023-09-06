@@ -1,7 +1,6 @@
 services:
   ai:
     image: processmaker-ai:${PM_IMAGE_NAME}
-    hostname: ${PM_DOMAIN}
     stop_grace_period: 10s
     deploy:
       mode: global
@@ -125,7 +124,7 @@ services:
     stop_signal: SIGTERM
     stop_grace_period: 5s
     healthcheck:
-      test: "curl localhost/ping || exit 1"
+      test: "curl processmaker.test/ping || exit 1"
       interval: 1m
       timeout: 3s
     ulimits:
@@ -452,10 +451,10 @@ services:
       timeout: 2s
     deploy:
       mode: replicated
-      replicas: 3
+      replicas: 1
       restart_policy:
         condition: always
-        delay: 0s
+        delay: 1s
         max_attempts: 0
     build:
       context: .

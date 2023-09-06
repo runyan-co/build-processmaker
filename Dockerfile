@@ -15,11 +15,11 @@ WORKDIR /tmp
 # Build arguments
 #
 ARG PM_BRANCH
-ARG PM_DOMAIN=localhost
+ARG PM_DOMAIN=processmaker.test
 ARG PM_DIR=/var/www/html
 ARG PM_SETUP_DIR=/opt/setup
 ARG PM_CLI_DIR=/opt/setup/cli
-ARG PM_APP_PORT=8080
+ARG PM_APP_PORT=80
 ARG PM_BROADCASTER_PORT=6009
 ARG PM_DOCKER_SOCK=/var/run/docker.sock
 ARG GITHUB_EMAIL

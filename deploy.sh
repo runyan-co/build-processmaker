@@ -28,4 +28,24 @@
 
   # Build is complete, show the logs for the installer
   docker compose logs -f installer
+
+  #
+  # Install the executors
+  #
+  echo ""
+  echo "Installing enterprise executors..."
+  echo ""
+  for EXECUTOR in docker-executor-csharp \
+    docker-executor-java \
+    docker-executor-php-ethos \
+    docker-executor-python \
+    docker-executor-python-selenium \
+    docker-executor-r; do
+      {
+        docker compose exec -it php-fpm composer require "processmaker/$EXECUTOR"
+        docker compose exec -it php-fpm php artisan "$EXECUTOR":install --no-ansi --no-interaction
+        sleep 1
+      }
+  done;
+
 }

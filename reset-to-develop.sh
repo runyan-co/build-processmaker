@@ -27,11 +27,12 @@
   #
     for PACKAGE in $PM_COMPOSER_PACKAGES_SOURCE_PATH/*; do
       {
-        cd "$PACKAGE" && git restore . && \
-        cd "$PACKAGE" && git restore . --staged && \
-        cd "$PACKAGE" && git clean -f -x && \
-        cd "$PACKAGE" && git fetch --all && \
-        cd "$PACKAGE" && git pull;
+        cd "$PACKAGE"
+        git restore . && \
+        git restore . --staged && \
+        git clean -f -x && \
+        git fetch --all && \
+        git pull
       } &
     done
 
