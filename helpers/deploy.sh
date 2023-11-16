@@ -27,25 +27,15 @@
   docker compose up -d --build
 
   # Build is complete, show the logs for the installer
-  docker compose logs -f installer
+  docker compose logs -f installer && sleep 3
 
-  #
-  # Install the executors
-  #
-  echo ""
-  echo "Installing enterprise executors..."
-  echo ""
-  for EXECUTOR in docker-executor-csharp \
-    docker-executor-java \
-    docker-executor-php-ethos \
-    docker-executor-python \
-    docker-executor-python-selenium \
-    docker-executor-r; do
-      {
-        docker compose exec -it php-fpm composer require "processmaker/$EXECUTOR"
-        docker compose exec -it php-fpm php artisan "$EXECUTOR":install --no-ansi --no-interaction
-        sleep 1
-      }
-  done;
+  # Sync default PM Blocks
+  docker compose exec -it queue php artisan package-pm-blocks:sync-pm-blocks --no-interaction
 
+  # Sync default process templates
+  docker compose exec -it queue php artisan processmaker:sync-default-templates --no-interaction
+
+  echo ""
+  echo "Done!"
+  echo ""
 }

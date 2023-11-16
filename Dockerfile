@@ -33,7 +33,7 @@ ARG INSTALL_NODE=1
 # environment vars
 #
 ENV COMPOSER_ALLOW_SUPERUSER       1
-ENV PHP_VERSION                    8.1
+ENV PHP_VERSION                    8.2
 ENV NODE_VERSION                   16
 ENV DEBIAN_FRONTEND                noninteractive
 ENV PM_APP_PORT                    ${PM_APP_PORT}

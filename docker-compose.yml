@@ -121,12 +121,11 @@ services:
   php-fpm:
     image: processmaker:${PM_IMAGE_NAME}
     entrypoint: [ "/usr/bin/php-fpm-entrypoint" ]
-    stop_signal: SIGTERM
-    stop_grace_period: 5s
+    stop_signal: SIGKILL
     healthcheck:
       test: "curl processmaker.test/ping || exit 1"
       interval: 1m
-      timeout: 3s
+      timeout: 2s
     ulimits:
       nproc: 65536
       nofile:
