@@ -1,0 +1,10 @@
+logs_enabled: true
+
+apm_config:
+  apm_non_local_traffic: true
+
+# Use java container support
+jmx_use_container_support: true
+
+remote_configuration:
+  enabled: true

@@ -1,0 +1,14 @@
+init_config:
+
+instances:
+  - host: database-host
+    username: datadog
+    password: "12345678"
+    port: "3306"
+    options:
+      replication: false
+      galera_cluster: true
+      extra_status_metrics: true
+      extra_innodb_metrics: true
+      schema_size_metrics: false
+      disable_innodb_metrics: false
