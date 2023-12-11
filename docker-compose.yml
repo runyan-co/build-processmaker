@@ -1,44 +1,44 @@
 services:
-  dd-agent:
-    image: gcr.io/datadoghq/agent:7
-    restart: on-failure
-    pid: host
-    cgroup_parent: host
-    security_opt:
-      - apparmor:unconfined
-    cap_add:
-      - SYS_ADMIN
-      - SYS_RESOURCE
-      - SYS_PTRACE
-      - NET_ADMIN
-      - NET_BROADCAST
-      - NET_RAW
-      - IPC_LOCK
-      - CHOWN
-    env_file:
-      - .env
-    environment:
-      - DD_ENV=${DD_ENV}
-      - DD_API_KEY=${DD_API_KEY}
-      - DD_SITE=${DD_SITE}
-      - DD_SERVICE=dd-agent
-      - DD_SYSTEM_PROBE_NETWORK_ENABLED=true
-    networks:
-      - processmaker
-    links:
-      - database-host
-      - redis
-    volumes:
-      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/php_fpm.d/conf.yaml:/etc/dd-agent/conf.d/php_fpm.d/conf.yaml
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/nginx.d/conf.yaml:/etc/dd-agent/conf.d/nginx.d/conf.yaml
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/mysql.d/conf.yaml:/etc/dd-agent/conf.d/mysql.d/conf.yaml
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/redisdb.d/conf.yaml:/etc/dd-agent/conf.d/redisdb.d/conf.yaml
-      - ${PM_BUILD_SOURCE}/stubs/dd-agent/datadog.yaml:/etc/dd-agent/datadog.yaml:ro
-      - /proc/:/host/proc:ro
-      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-    ports:
-      - 8126:8126
+#  dd-agent:
+#    image: gcr.io/datadoghq/agent:7
+#    restart: on-failure
+#    pid: host
+#    cgroup_parent: host
+#    security_opt:
+#      - apparmor:unconfined
+#    cap_add:
+#      - SYS_ADMIN
+#      - SYS_RESOURCE
+#      - SYS_PTRACE
+#      - NET_ADMIN
+#      - NET_BROADCAST
+#      - NET_RAW
+#      - IPC_LOCK
+#      - CHOWN
+#    env_file:
+#      - .env
+#    environment:
+#      - DD_ENV=${DD_ENV}
+#      - DD_API_KEY=${DD_API_KEY}
+#      - DD_SITE=${DD_SITE}
+#      - DD_SERVICE=dd-agent
+#      - DD_SYSTEM_PROBE_NETWORK_ENABLED=true
+#    networks:
+#      - processmaker
+#    links:
+#      - database-host
+#      - redis
+#    volumes:
+#      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
+#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/php_fpm.d/conf.yaml:/etc/dd-agent/conf.d/php_fpm.d/conf.yaml
+#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/nginx.d/conf.yaml:/etc/dd-agent/conf.d/nginx.d/conf.yaml
+#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/mysql.d/conf.yaml:/etc/dd-agent/conf.d/mysql.d/conf.yaml
+#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/redisdb.d/conf.yaml:/etc/dd-agent/conf.d/redisdb.d/conf.yaml
+#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/datadog.yaml:/etc/dd-agent/datadog.yaml:ro
+#      - /proc/:/host/proc:ro
+#      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+#    ports:
+#      - 8126:8126
 
   ai:
     image: processmaker-ai:${PM_IMAGE_NAME}
@@ -183,13 +183,6 @@ services:
         condition: on-failure
         max_attempts: 3
         delay: 3s
-      resources:
-        reservations:
-          cpus: '2'
-          memory: 1.5G
-        limits:
-          cpus: '3'
-          memory: 2G
     extra_hosts:
       - 'host.docker.internal:host-gateway'
       - '${PM_DOMAIN}:host-gateway'
@@ -279,13 +272,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 3s
-      resources:
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-        limits:
-          cpus: '1'
-          memory: 512M
     extra_hosts:
       - 'host.docker.internal:host-gateway'
       - '${PM_DOMAIN}:host-gateway'
@@ -578,13 +564,6 @@ services:
       timeout: 5s
     deploy:
       mode: global
-      resources:
-        reservations:
-          cpus: '1'
-          memory: 1.5G
-        limits:
-          cpus: '2'
-          memory: 3G
     networks:
       - processmaker
     ports:
