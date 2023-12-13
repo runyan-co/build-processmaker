@@ -79,15 +79,21 @@ services:
       - DD_SERVICE=ai
 
   nayra-engine-rabbit:
+    hostname: nayra-engine-rabbit
     build:
       context: ${PM_BUILD_SOURCE}/services/nayra
       dockerfile: ./Nayra/Dockerfile
       args:
         - SDK_PATH=./executors/sdk
+    deploy:
+      mode: global
+    healthcheck:
+      test: "supervisorctl status || exit 1"
+      retries: 3
+      timeout: 5s
+      interval: 1m
     volumes:
       - ${PM_BUILD_SOURCE}/services/nayra/Nayra:/app
-    env_file:
-      - .env
     environment:
       - QUEUE_DRIVER=rabbitmq
       - DB_HOST=${DB_HOST}
@@ -113,6 +119,7 @@ services:
     image: rabbitmq:3-management
     hostname: rabbitmq
     ports:
+      - 5672:5672
       - 30672:5672
       - 31672:15672
     healthcheck:
@@ -208,6 +215,7 @@ services:
       - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
     links:
       - database-host
+      - rabbitmq
       - redis
     depends_on:
       installer:
@@ -220,6 +228,9 @@ services:
         condition: service_healthy
         required: true
       nayra-engine-rabbit:
+        condition: service_healthy
+        required: true
+      rabbitmq:
         condition: service_healthy
         required: true
 
@@ -301,6 +312,7 @@ services:
     links:
       - database-host
       - redis
+      - rabbitmq
     depends_on:
       redis:
         condition: service_healthy
@@ -395,6 +407,7 @@ services:
     links:
       - database-host
       - redis
+      - rabbitmq
     depends_on:
       installer:
         condition: service_started
@@ -453,6 +466,7 @@ services:
     links:
       - database-host
       - redis
+      - rabbitmq
     depends_on:
       installer:
         condition: service_started
@@ -540,6 +554,7 @@ services:
     links:
       - database-host
       - redis
+      - rabbitmq
     depends_on:
       installer:
         condition: service_started
@@ -682,6 +697,7 @@ services:
       - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
     links:
       - database-host
+      - rabbitmq
       - redis
     depends_on:
       installer:
