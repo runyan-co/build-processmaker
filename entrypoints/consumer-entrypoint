@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+{
+  #
+  # ProcessMaker services installation status
+  #
+  installationInProgress() {
+    if [ -f "$PM_DIR/storage/build/.installing" ]; then
+      return 0;
+    else
+      return 1;
+    fi
+  }
+
+  #
+  # Application fully installed and ready to take requests
+  #
+  applicationReady() {
+    if installationInProgress; then
+      return 1;
+    elif [ ! -f "$PM_DIR/.env" ]; then
+      return 1;
+    else
+      return 0;
+    fi
+  }
+
+  #
+  # Wait until all dependencies are installed and
+  # application is ready to take requests
+  #
+  until applicationReady; do
+    sleep 5
+  done
+}
+
+#
+# 3. Run the entrypoint command
+#
+$PHP_BINARY artisan processmaker:consumer --no-interaction --no-ansi
