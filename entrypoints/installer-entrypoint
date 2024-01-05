@@ -169,6 +169,12 @@
     done
 
     #
+    # Sort the env file
+    #
+    sort "$ENV_REALPATH" >.env.sorted
+    mv .env.sorted "$ENV_REALPATH"
+
+    #
     # Copy over the new .env file for laravel
     #
     echo "Copying env file to app directory";
