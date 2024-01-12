@@ -21,6 +21,7 @@
   cd "$PM_APP_SOURCE" && git restore . && \
   cd "$PM_APP_SOURCE" && git restore --staged . && \
   cd "$PM_APP_SOURCE" && git clean -f -x && \
+  cd "$PM_APP_SOURCE" && rm -rf storage/build && \
   cd "$PM_BUILD_SOURCE"
 
   # exit when complete

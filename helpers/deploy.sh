@@ -27,13 +27,13 @@
   docker compose up -d --build
 
   # Build is complete, show the logs for the installer
-  docker compose logs -f installer && sleep 3
+  docker compose logs -f installer
 
   # Sync default PM Blocks
-  docker compose exec -it queue php artisan package-pm-blocks:sync-pm-blocks --no-interaction
+  docker compose exec -it web-backend php artisan package-pm-blocks:sync-pm-blocks
 
   # Sync default process templates
-  docker compose exec -it queue php artisan processmaker:sync-default-templates --no-interaction
+  docker compose exec -it web-backend php artisan processmaker:sync-default-templates
 
   echo ""
   echo "Done!"

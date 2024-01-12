@@ -22,7 +22,6 @@ services:
 #      - DD_API_KEY=${DD_API_KEY}
 #      - DD_SITE=${DD_SITE}
 #      - DD_SERVICE=dd-agent
-#      - DD_SYSTEM_PROBE_NETWORK_ENABLED=true
 #    networks:
 #      - processmaker
 #    links:
@@ -51,9 +50,11 @@ services:
         max_attempts: 3
     build:
       context: ./services/ai
-    depends_on:
-      database-host:
-        condition: service_healthy
+#    depends_on:
+#      database-host:
+#        condition: service_healthy
+#      dd-agent:
+#        condition: service_started
     ports:
       - 8010:8010
     dns:
@@ -65,8 +66,8 @@ services:
       - '${PM_DOMAIN}:host-gateway'
     networks:
       - processmaker
-    links:
-      - database-host
+#    links:
+#      - database-host
     env_file:
       - .env
     environment:
@@ -310,15 +311,17 @@ services:
       - compiled-views:${PM_DIR}/storage/framework/views:delegated
       - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
     links:
-      - database-host
+#      - database-host
       - redis
     depends_on:
       redis:
         condition: service_healthy
         required: true
-      database-host:
-        condition: service_healthy
-        required: true
+#      database-host:
+#        condition: service_healthy
+#        required: true
+#      dd-agent:
+#        condition: service_started
 
   web-backend:
     image: processmaker:${PM_IMAGE_NAME}
@@ -404,18 +407,20 @@ services:
       - compiled-views:${PM_DIR}/storage/framework/views:delegated
       - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
     links:
-      - database-host
+#      - database-host
       - redis
     depends_on:
       installer:
         condition: service_started
         required: true
-      database-host:
-        condition: service_healthy
-        required: true
+#      database-host:
+#        condition: service_healthy
+#        required: true
       redis:
         condition: service_healthy
         required: true
+#      dd-agent:
+#        condition: service_started
 
   http-proxy:
     image: nginx:stable
@@ -462,21 +467,23 @@ services:
       - ${PM_BUILD_SOURCE}/stubs/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - app-storage:${PM_DIR}/storage/app:consistent
     links:
-      - database-host
+#      - database-host
       - redis
     depends_on:
       installer:
         condition: service_started
         required: true
-      database-host:
-        condition: service_healthy
-        required: true
+#      database-host:
+#        condition: service_healthy
+#        required: true
       redis:
         condition: service_healthy
         required: true
       web-backend:
         condition: service_started
         required: true
+#      dd-agent:
+#        condition: service_started
 
   scheduler:
     image: processmaker:${PM_IMAGE_NAME}
@@ -549,18 +556,20 @@ services:
       - compiled-views:${PM_DIR}/storage/framework/views:delegated
       - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
     links:
-      - database-host
+#      - database-host
       - redis
     depends_on:
       installer:
         condition: service_started
         required: true
-      database-host:
-        condition: service_healthy
-        required: true
+#      database-host:
+#        condition: service_healthy
+#        required: true
       redis:
         condition: service_healthy
         required: true
+#      dd-agent:
+#        condition: service_started
 
   realtime-events:
     image: 'quay.io/soketi/soketi:latest-16-debian'
@@ -649,7 +658,7 @@ services:
       timeout: 2s
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 4
       restart_policy:
         condition: always
         delay: 1s
@@ -674,11 +683,11 @@ services:
     networks:
       - processmaker
     volumes:
-      - type: volume
-        source: sockets
-        target: /var/run/mysqld
-        volume:
-          nocopy: true
+#      - type: volume
+#        source: sockets
+#        target: /var/run/mysqld
+#        volume:
+#          nocopy: true
       - type: bind
         source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
         target: /opt/packages
@@ -692,7 +701,7 @@ services:
       - compiled-views:${PM_DIR}/storage/framework/views:delegated
       - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
     links:
-      - database-host
+#      - database-host
       - redis
     depends_on:
       installer:
@@ -701,42 +710,44 @@ services:
       redis:
         condition: service_healthy
         required: true
-      database-host:
-        condition: service_healthy
-        required: true
+#      database-host:
+#        condition: service_healthy
+#        required: true
+#      dd-agent:
+#        condition: service_started
 
-  database-host:
-    image: mysql:8
-    restart: on-failure
-    command: "mysqld --port=${DB_PORT}"
-    ulimits:
-      nproc: 65536
-      nofile:
-        soft: 65536
-        hard: 65536
-    healthcheck:
-      test: mysqladmin ping -P ${DB_PORT} -u ${DB_USERNAME} -p${DB_PASSWORD} -h ${DB_HOST}
-      interval: 15s
-      timeout: 5s
-    deploy:
-      mode: global
-    networks:
-      - processmaker
-    ports:
-      - ${DB_PORT}:${DB_PORT}
-    environment:
-      - MYSQL_DATABASE=processmaker
-      - MYSQL_ROOT_PASSWORD=password
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=database-host
-    volumes:
-      - type: volume
-        source: sockets
-        target: /var/run/mysqld
-        volume:
-          nocopy: true
-      - mysql-data:/var/lib/mysql
-      - ${PM_BUILD_SOURCE}/stubs/mysql:/etc/mysql/conf.d:ro
+#  database-host:
+#    image: mysql:8
+#    restart: on-failure
+#    command: "mysqld --port=${DB_PORT}"
+#    ulimits:
+#      nproc: 65536
+#      nofile:
+#        soft: 65536
+#        hard: 65536
+#    healthcheck:
+#      test: mysqladmin ping -P ${DB_PORT} -u ${DB_USERNAME} -p${DB_PASSWORD} -h ${DB_HOST}
+#      interval: 15s
+#      timeout: 5s
+#    deploy:
+#      mode: global
+#    networks:
+#      - processmaker
+#    ports:
+#      - ${DB_PORT}:${DB_PORT}
+#    environment:
+#      - MYSQL_DATABASE=processmaker
+#      - MYSQL_ROOT_PASSWORD=password
+#      - DD_VERSION=${DD_VERSION}
+#      - DD_SERVICE=database-host
+#    volumes:
+#      - type: volume
+#        source: sockets
+#        target: /var/run/mysqld
+#        volume:
+#          nocopy: true
+#      - mysql-data:/var/lib/mysql
+#      - ${PM_BUILD_SOURCE}/stubs/mysql:/etc/mysql/conf.d:ro
 
   redis:
     image: redis:7
@@ -757,7 +768,7 @@ services:
 
 volumes:
   app-storage: {}
-  mysql-data: {}
+#  mysql-data: {}
   redis-data: {}
   compiled-views: {}
   compiled-classes: {}

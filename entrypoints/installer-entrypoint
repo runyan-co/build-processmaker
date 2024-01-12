@@ -231,7 +231,7 @@
     php artisan telescope:pause && sleep 1;
     php artisan package:discover --no-interaction --no-ansi && sleep 1;
     php artisan horizon:publish --no-interaction --no-ansi && sleep 1;
-    php artisan telescope:publish --force --no-interaction --no-ansi && sleep 1;
+    php artisan db:wipe --force --no-interaction --no-ansi && sleep 1;
     php artisan migrate:fresh --force --no-interaction --no-ansi && sleep 1;
     php artisan db:seed --force --no-interaction --no-ansi && sleep 1;
     php artisan passport:install --no-interaction --no-ansi && sleep 1;
