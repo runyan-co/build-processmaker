@@ -38,7 +38,7 @@ mkdir -p ~/repositories
 cd ~/repositories
 git clone https://github.com/ProcessMaker/processmaker
 cd processmaker
-# running this will give you the value to set 
+# running this will give you the value to set
 # as "PM_APP_SOURCE" in the .env file:
 pwd
 ```
@@ -47,7 +47,7 @@ pwd
 ```shell
 mkdir -p ~/packages/composer/processmaker
 cd ~/packages/composer/processmaker
-# running this will give you the value to set as 
+# running this will give you the value to set as
 # "PM_COMPOSER_PACKAGES_SOURCE_PATH" in the .env file:
 pwd
 ```
@@ -61,6 +61,11 @@ pwd
 cp .env.build .env
 ```
 ##### After running this, go through each variable in the `.env` file and set them appropriately.
+
+##### Build command
+```shell
+docker compose up -d --build
+```
 
 #### 6. Helper scripts
 [ TO DO ]
