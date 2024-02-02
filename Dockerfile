@@ -83,6 +83,7 @@ RUN apt-get update -y && \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
           php${PHP_VERSION} \
+          php${PHP_VERSION}-ldap \
           php${PHP_VERSION}-fpm \
           php${PHP_VERSION}-cli \
           php${PHP_VERSION}-common \

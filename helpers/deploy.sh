@@ -27,13 +27,24 @@
   docker compose up -d --build
 
   # Build is complete, show the logs for the installer
-  docker compose logs -f installer && sleep 3
-
-  # Sync default PM Blocks
+  echo ""
+  echo "Wait for remaining install commands to finish..."
+  echo ""
+  docker compose logs -f installer
+  sleep 1
   docker compose exec -it queue php artisan package-pm-blocks:sync-pm-blocks --no-interaction
-
-  # Sync default process templates
+  sleep 1
   docker compose exec -it queue php artisan processmaker:sync-default-templates --no-interaction
+  sleep 1
+  docker compose exec -it queue php artisan processmaker:sync-guided-templates --no-interaction
+  sleep 1
+  docker compose exec -it queue php artisan config:clear --no-interaction
+  sleep 1
+  docker compose exec -it queue php artisan upgrade --no-interaction
+  sleep 1
+  docker compose exec -it queue php artisan config:cache --no-interaction
+  sleep 3
+  docker compose exec -it queue php artisan processmaker:regenerate-css --no-interaction
 
   echo ""
   echo "Done!"

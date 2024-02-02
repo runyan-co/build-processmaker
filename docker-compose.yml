@@ -1,45 +1,4 @@
 services:
-#  dd-agent:
-#    image: gcr.io/datadoghq/agent:7
-#    restart: on-failure
-#    pid: host
-#    cgroup_parent: host
-#    security_opt:
-#      - apparmor:unconfined
-#    cap_add:
-#      - SYS_ADMIN
-#      - SYS_RESOURCE
-#      - SYS_PTRACE
-#      - NET_ADMIN
-#      - NET_BROADCAST
-#      - NET_RAW
-#      - IPC_LOCK
-#      - CHOWN
-#    env_file:
-#      - .env
-#    environment:
-#      - DD_ENV=${DD_ENV}
-#      - DD_API_KEY=${DD_API_KEY}
-#      - DD_SITE=${DD_SITE}
-#      - DD_SERVICE=dd-agent
-#      - DD_SYSTEM_PROBE_NETWORK_ENABLED=true
-#    networks:
-#      - processmaker
-#    links:
-#      - database-host
-#      - redis
-#    volumes:
-#      - ${PM_DOCKER_SOCK}:/var/run/docker.sock:ro
-#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/php_fpm.d/conf.yaml:/etc/dd-agent/conf.d/php_fpm.d/conf.yaml
-#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/nginx.d/conf.yaml:/etc/dd-agent/conf.d/nginx.d/conf.yaml
-#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/mysql.d/conf.yaml:/etc/dd-agent/conf.d/mysql.d/conf.yaml
-#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/conf.d/redisdb.d/conf.yaml:/etc/dd-agent/conf.d/redisdb.d/conf.yaml
-#      - ${PM_BUILD_SOURCE}/stubs/dd-agent/datadog.yaml:/etc/dd-agent/datadog.yaml:ro
-#      - /proc/:/host/proc:ro
-#      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-#    ports:
-#      - 8126:8126
-
   ai:
     image: processmaker-ai:${PM_IMAGE_NAME}
     stop_grace_period: 10s
@@ -74,165 +33,6 @@ services:
       - DATABASE_USER=${DB_USERNAME}
       - DATABASE_PASS=${DB_PASSWORD}
       - DATABASE_NAME=${DB_NAME}
-      - DD_ENV=${DD_ENV}
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=ai
-
-#  nayra-engine-rabbit:
-#    hostname: nayra-engine-rabbit
-#    build:
-#      context: ${PM_BUILD_SOURCE}/services/nayra
-#      dockerfile: ./Nayra/Dockerfile
-#      args:
-#        - SDK_PATH=./executors/sdk
-#    deploy:
-#      mode: global
-#    healthcheck:
-#      test: "supervisorctl status || exit 1"
-#      retries: 3
-#      timeout: 5s
-#      interval: 1m
-#    volumes:
-#      - ${PM_BUILD_SOURCE}/services/nayra/Nayra:/app
-#    environment:
-#      - QUEUE_DRIVER=rabbitmq
-#      - DB_HOST=${DB_HOST}
-#      - DB_HOSTNAME=${DB_HOST}
-#      - DB_USERNAME=${DB_USERNAME}
-#      - DB_PASSWORD=${DB_PASSWORD}
-#      - DB_NAME=${DB_NAME}
-#      - DB_DATABASE=${DB_NAME}
-#      - DB_PORT=${DB_PORT}
-#      - DD_VERSION=${DD_VERSION}
-#      - DD_SERVICE=nayra
-#    links:
-#      - database-host
-#      - mongodb
-#      - rabbitmq
-#    depends_on:
-#      rabbitmq:
-#        condition: service_healthy
-#    networks:
-#      - processmaker
-
-#  rabbitmq:
-#    image: rabbitmq:3-management
-#    hostname: rabbitmq
-#    ports:
-#      - 5672:5672
-#      - 30672:5672
-#      - 31672:15672
-#    healthcheck:
-#      test: ["CMD", "rabbitmqctl", "status"]
-#      interval: 10s
-#      timeout: 30s
-#      retries: 5
-#    networks:
-#      - processmaker
-
-#  mongodb:
-#    image: mongo:4.4
-#    hostname: mongodb
-#    volumes:
-#      - ${PM_BUILD_SOURCE}/services/nayra/Nayra/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
-#    ports:
-#      - 27017:27017
-#    env_file:
-#      - .env
-#    networks:
-#      - processmaker
-
-#  consumer:
-#    image: processmaker:${PM_IMAGE_NAME}
-#    entrypoint: [ "/usr/bin/consumer-entrypoint" ]
-#    stop_signal: SIGTERM
-#    stop_grace_period: 5s
-#    extra_hosts:
-#      - 'host.docker.internal:host-gateway'
-#      - '${PM_DOMAIN}:host-gateway'
-#    ulimits:
-#      nproc: 65536
-#      nofile:
-#        soft: 65536
-#        hard: 65536
-#    deploy:
-#      mode: replicated
-#      replicas: 4
-#      restart_policy:
-#        condition: always
-#        delay: 0s
-#    sysctls:
-#      kernel.domainname: ${PM_DOMAIN}
-#      net.ipv4.tcp_syncookies: 1
-#      net.ipv4.conf.all.rp_filter: 1
-#      net.ipv4.conf.all.secure_redirects: 1
-#      net.ipv4.conf.all.send_redirects: 0
-#      net.ipv4.conf.all.accept_source_route: 0
-#      net.ipv6.conf.all.accept_source_route: 0
-#      net.ipv4.icmp_echo_ignore_broadcasts: 1
-#      net.ipv4.tcp_timestamps: 0
-#      net.ipv4.tcp_rmem: '4096 4096 16777216'
-#      net.ipv4.tcp_wmem: '4096 4096 16777216'
-#      net.ipv4.tcp_tw_reuse: 1
-#      net.ipv4.tcp_fin_timeout: 30
-#      net.core.somaxconn: 60000
-#      net.ipv4.tcp_synack_retries: 3
-#    dns:
-#      - 1.1.1.1
-#      - 1.0.0.1
-#      - 0.0.0.0
-#    build:
-#      context: .
-#      args:
-#        PM_DOCKER_SOCK:
-#        PM_BRANCH:
-#        PM_APP_PORT:
-#        PM_BROADCASTER_PORT:
-#        PM_DOMAIN:
-#        PM_DIR:
-#        GITHUB_EMAIL:
-#        GITHUB_USERNAME:
-#        GITHUB_OAUTH_TOKEN:
-#    env_file:
-#      - .env
-#    environment:
-#      - DD_VERSION=${DD_VERSION}
-#      - DD_SERVICE=consumer
-#    networks:
-#      - processmaker
-#    volumes:
-#      - type: bind
-#        source: ${PM_COMPOSER_PACKAGES_SOURCE_PATH}
-#        target: /opt/packages
-#        consistency: consistent
-#      - ${PM_DOCKER_SOCK}:/var/run/docker.sock
-#      - ${PM_APP_SOURCE}:${PM_DIR}:consistent
-#      - build:${PM_DIR}/storage/build:consistent
-#      - app-storage:${PM_DIR}/storage/app:consistent
-#      - logs:${PM_DIR}/storage/logs:delegated
-#      - compiled-classes:${PM_DIR}/bootstrap/cache:delegated
-#      - compiled-views:${PM_DIR}/storage/framework/views:delegated
-#      - compiled-facades:${PM_DIR}/storage/framework/cache:delegated
-#    links:
-#      - database-host
-#      - rabbitmq
-#      - redis
-#    depends_on:
-#      installer:
-#        condition: service_started
-#        required: true
-#      database-host:
-#        condition: service_healthy
-#        required: true
-#      redis:
-#        condition: service_healthy
-#        required: true
-#      nayra-engine-rabbit:
-#        condition: service_healthy
-#        required: true
-#      rabbitmq:
-#        condition: service_healthy
-#        required: true
 
   installer:
     image: processmaker:${PM_IMAGE_NAME}
@@ -289,8 +89,6 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_DATABASE=${DB_NAME}
       - DB_PORT=${DB_PORT}
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=installer
     volumes:
       - type: volume
         source: sockets
@@ -363,9 +161,6 @@ services:
       - 0.0.0.0
     env_file:
       - .env
-    environment:
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=web-backend
     build:
       context: .
       args:
@@ -439,9 +234,6 @@ services:
       - 0.0.0.0
     env_file:
       - .env
-    environment:
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=http-proxy
     networks:
       - processmaker
     ports:
@@ -530,9 +322,6 @@ services:
         GITHUB_OAUTH_TOKEN:
     env_file:
       - .env
-    environment:
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=scheduler
     networks:
       - processmaker
     volumes:
@@ -576,8 +365,6 @@ services:
     env_file:
       - .env
     environment:
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=realtime-events
       - SOKETI_DEBUG=0
       - SOKETI_METRICS_SERVER_PORT=9601
       - SOKETI_PORT=${PM_BROADCASTER_PORT}
@@ -649,7 +436,7 @@ services:
       timeout: 2s
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 2
       restart_policy:
         condition: always
         delay: 1s
@@ -668,9 +455,6 @@ services:
         GITHUB_OAUTH_TOKEN:
     env_file:
       - .env
-    environment:
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=queue
     networks:
       - processmaker
     volumes:
@@ -727,8 +511,6 @@ services:
     environment:
       - MYSQL_DATABASE=processmaker
       - MYSQL_ROOT_PASSWORD=password
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=database-host
     volumes:
       - type: volume
         source: sockets
@@ -747,9 +529,6 @@ services:
       timeout: 5s
     env_file:
       - .env
-    environment:
-      - DD_VERSION=${DD_VERSION}
-      - DD_SERVICE=redis
     networks:
       - processmaker
     volumes:
