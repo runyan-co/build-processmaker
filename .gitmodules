@@ -1,6 +1,6 @@
 [submodule "services/ai"]
 	path = services/ai
-	url = https://github.com/ProcessMaker/pm4_ai.git
+	url = git@github.com:ProcessMaker/pm4_ai
 [submodule "services/nayra"]
 	path = services/nayra
-	url = https://github.com/ProcessMaker/nayra-docker
+	url = git@github.com:ProcessMaker/nayra-docker
