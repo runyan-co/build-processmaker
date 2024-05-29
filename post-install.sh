@@ -1,0 +1,1 @@
+./helpers/post-install.sh

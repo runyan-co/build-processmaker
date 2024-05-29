@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+{
+  #
+  # ProcessMaker services installation status
+  #
+  installationInProgress() {
+    if [ -f "$PM_DIR/storage/build/.installing" ]; then
+      return 0;
+    else
+      return 1;
+    fi
+  }
+
+  #
+  # Application fully installed and ready to take requests
+  #
+  applicationReady() {
+    if installationInProgress; then
+      return 1;
+    elif [ ! -f "$PM_DIR/.env" ]; then
+      return 1;
+    else
+      return 0;
+    fi
+  }
+
+  #
+  # Wait until all dependencies are installed and
+  # application is ready to take requests
+  #
+  until applicationReady; do
+    sleep 5
+  done
+}
+
+#
+# 3. Run a simple loop to keep the container open
+#    and running for use by the developer later
+#    to run artisan or other shell commands
+#
+until ! sleep 5; do
+  true
+done

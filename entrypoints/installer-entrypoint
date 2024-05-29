@@ -80,10 +80,27 @@
     done
 
     #
+    # Package used to aid local development
+    #
+    installDumpServer;
+
+    #
     # dump the autoloader and run the composer scripts
     # once since we didn't during package installation
     #
     composer dumpautoload -o -v --no-ansi --no-interaction;
+  }
+
+  installDumpServer() {
+    #
+    # This package is for my own local development use, it
+    # won't be included in commits for the actual codebase
+    #
+    composer require beyondcode/laravel-dump-server \
+      --no-progress \
+      --no-ansi \
+      --no-plugins \
+      --no-interaction;
   }
 
   #
